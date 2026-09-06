@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Archivo:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+  body { margin: 0; background: #0E0F12; color: #E8E4DC; font-family: Archivo, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: #E4322B; text-decoration: none; }
+  a:hover { color: #FF6A5E; }
+  * { box-sizing: border-box; }
+  input { font-family: inherit; }
+  ::placeholder { color: #8E8D83; }
+  ::selection { background: #E4322B; color: #0E0F12; }
+</style>
+</helmet>
+
+<div style="min-height: 100vh; background: #0E0F12; padding-bottom: 90px">
+
+  <header style="border-bottom: 1px solid #E4322B; padding: 0 40px">
+    <div style="max-width: 1320px; margin: 0 auto; display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; flex-wrap: wrap; padding: 26px 0 14px 0">
+      <div>
+        <div style="font-family: 'Playfair Display', serif; font-size: 42px; line-height: 0.95; letter-spacing: -0.02em; font-weight: 500">Montana Money</div>
+        <div style="font-size: 10.5px; letter-spacing: 0.3em; text-transform: uppercase; color: #96958B; margin-top: 10px">Officeholders · Donors · 2026 cycle</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #2E2F31; padding: 0 2px 8px 2px; min-width: 300px; flex: 0 1 340px">
+        <span style="color: #E4322B; font-size: 14px">⌕</span>
+        <input value="{{ query }}" onChange="{{ onQuery }}" placeholder="Search names, offices, industries" style="border: none; background: transparent; outline: none; font-size: 14px; width: 100%; color: #E8E4DC; letter-spacing: 0.01em" />
+      </div>
+    </div>
+  </header>
+
+  <nav style="border-bottom: 1px solid #23242700; background: #0E0F12; padding: 0 40px; position: sticky; top: 0; z-index: 30; border-bottom: 1px solid #232427">
+    <div style="max-width: 1320px; margin: 0 auto; display: flex; gap: 30px; flex-wrap: wrap">
+      <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="4">
+        <button onClick="{{ tab.go }}" style="border: none; background: transparent; cursor: pointer; font-family: inherit; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; padding: 15px 0; color: {{ tab.color }}; box-shadow: {{ tab.line }}">{{ tab.label }}</button>
+      </sc-for>
+      <div style="flex: 1"></div>
+      <div style="padding: 15px 0; font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #E4322B">Demo data</div>
+    </div>
+  </nav>
+
+  <sc-if value="{{ isRoster }}" hint-placeholder-val="{{ true }}">
+    <main style="padding: 0 40px">
+      <div style="max-width: 1320px; margin: 0 auto">
+        <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); border-bottom: 1px solid #232427">
+          <sc-for list="{{ headline }}" as="k" hint-placeholder-count="4">
+            <div style="padding: 34px 26px 30px 0">
+              <div style="font-family: 'Playfair Display', serif; font-size: 46px; line-height: 1; letter-spacing: -0.025em; color: #E8E4DC">{{ k.value }}</div>
+              <div style="font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; color: #E4322B; margin-top: 12px">{{ k.label }}</div>
+              <div style="font-size: 12px; color: #96958B; margin-top: 4px; line-height: 1.45">{{ k.note }}</div>
+            </div>
+          </sc-for>
+        </section>
+
+        <section style="display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; padding: 18px 0; border-bottom: 1px solid #232427">
+          <div style="display: flex; gap: 22px; flex-wrap: wrap">
+            <sc-for list="{{ levels }}" as="lv" hint-placeholder-count="5">
+              <button onClick="{{ lv.go }}" style="cursor: pointer; border: none; background: transparent; font-family: inherit; font-size: 12px; letter-spacing: 0.04em; padding: 0; color: {{ lv.color }}; border-bottom: 1px solid {{ lv.border }}; padding-bottom: 3px">{{ lv.label }}</button>
+            </sc-for>
+          </div>
+          <div style="display: flex; gap: 18px; align-items: center">
+            <span style="font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: #8E8D83">Sort</span>
+            <sc-for list="{{ sorts }}" as="s" hint-placeholder-count="3">
+              <button onClick="{{ s.go }}" style="cursor: pointer; border: none; background: transparent; font-family: inherit; font-size: 12px; padding: 0; color: {{ s.color }}; border-bottom: 1px solid {{ s.border }}; padding-bottom: 3px">{{ s.label }}</button>
+            </sc-for>
+          </div>
+        </section>
+
+        <section>
+          <sc-for list="{{ roster }}" as="p" hint-placeholder-count="8">
+            <div style="display: grid; grid-template-columns: 30px 2.3fr 1.4fr 1.5fr 1fr 40px; gap: 22px; align-items: center; padding: 20px 0; border-bottom: 1px solid #1B1C1F" style-hover="background: #14151A">
+              <div style="font-size: 11px; color: #8A897F; letter-spacing: 0.06em">{{ p.rank }}</div>
+              <div style="cursor: pointer" onClick="{{ p.open }}">
+                <div style="font-family: 'Playfair Display', serif; font-size: 25px; letter-spacing: -0.015em; line-height: 1.15">{{ p.name }}</div>
+                <div style="font-size: 11.5px; color: #96958B; margin-top: 3px; letter-spacing: 0.02em">{{ p.office }}</div>
+              </div>
+              <div>
+                <span style="font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: {{ p.partyInk }}; border: 1px solid {{ p.partyInk }}; padding: 3px 8px">{{ p.partyShort }}</span>
+                <div style="font-size: 11.5px; color: #96958B; margin-top: 8px">{{ p.topIndustry }}</div>
+              </div>
+              <div>
+                <div style="display: flex; height: 2px; background: #26272B">
+                  <div style="height: 2px; background: #E4322B; width: {{ p.inStateW }}"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: #8E8D83; margin-top: 8px">
+                  <span>In-state {{ p.inStateFmt }}</span>
+                </div>
+              </div>
+              <div style="text-align: right; font-family: 'Playfair Display', serif; font-size: 27px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums">{{ p.raisedFmt }}</div>
+              <div style="text-align: right">
+                <button onClick="{{ p.toggleCompare }}" style="cursor: pointer; border: 1px solid {{ p.cmpBorder }}; background: {{ p.cmpBg }}; color: {{ p.cmpInk }}; width: 26px; height: 26px; font-family: inherit; font-size: 12px; line-height: 1; padding: 0">{{ p.cmpMark }}</button>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ rosterEmpty }}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 70px 0; text-align: center; color: #8E8D83; font-size: 13px">Nothing matches that search.</div>
+          </sc-if>
+        </section>
+
+        <sc-if value="{{ hasCompare }}" hint-placeholder-val="{{ false }}">
+          <div style="position: sticky; bottom: 22px; display: flex; justify-content: center; margin-top: 24px">
+            <button onClick="{{ goCompare }}" style="cursor: pointer; font-family: inherit; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; padding: 14px 26px; background: #E4322B; color: #0E0F12; border: none">Compare {{ compareCount }} →</button>
+          </div>
+        </sc-if>
+      </div>
+    </main>
+  </sc-if>
+
+  <sc-if value="{{ isPolitician }}" hint-placeholder-val="{{ false }}">
+    <main style="padding: 0 40px">
+      <div style="max-width: 1320px; margin: 0 auto">
+        <button onClick="{{ goRoster }}" style="cursor: pointer; border: none; background: transparent; font-family: inherit; font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: #E4322B; padding: 22px 0 0 0">← Officeholders</button>
+
+        <section style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 50px; padding: 20px 0 40px 0; border-bottom: 1px solid #E4322B; align-items: end">
+          <div>
+            <div style="font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: {{ pol.partyInk }}">{{ pol.party }} · {{ pol.level }}</div>
+            <div style="font-family: 'Playfair Display', serif; font-size: 76px; line-height: 0.94; letter-spacing: -0.035em; margin-top: 14px">{{ pol.name }}</div>
+            <div style="font-size: 15px; color: #9B9A90; margin-top: 14px; letter-spacing: 0.01em">{{ pol.office }} · {{ pol.cycle }}</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 26px">
+            <div>
+              <div style="font-family: 'Playfair Display', serif; font-size: 40px; letter-spacing: -0.025em; line-height: 1">{{ pol.raisedFmt }}</div>
+              <div style="font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #96958B; margin-top: 8px">Total raised</div>
+            </div>
+            <div>
+              <div style="font-family: 'Playfair Display', serif; font-size: 40px; letter-spacing: -0.025em; line-height: 1">{{ pol.cashFmt }}</div>
+              <div style="font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #96958B; margin-top: 8px">Cash on hand</div>
+            </div>
+          </div>
+        </section>
+
+        <section style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 44px; padding: 34px 0; border-bottom: 1px solid #232427">
+          <div>
+            <div style="font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: #E4322B">Geography of the money</div>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 18px">
+              <div style="font-family: 'Playfair Display', serif; font-size: 54px; line-height: 1; letter-spacing: -0.03em">{{ pol.inStateFmt }}</div>
+              <div style="font-size: 12.5px; color: #9B9A90">from Montana addresses</div>
+            </div>
+            <div style="display: flex; height: 3px; background: #26272B; margin-top: 20px">
+              <div style="height: 3px; background: #E8E4DC; width: {{ pol.inStateW }}"></div>
+            </div>
+            <div style="font-size: 11.5px; color: #96958B; margin-top: 9px">{{ pol.outStateFmt }} arrives from outside the state</div>
+          </div>
+          <div>
+            <div style="font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: #E4322B">PACs vs. individuals</div>
+            <div style="display: flex; align-items: baseline; gap: 12px; margin-top: 18px">
+              <div style="font-family: 'Playfair Display', serif; font-size: 54px; line-height: 1; letter-spacing: -0.03em">{{ pol.pacFmt }}</div>
+              <div style="font-size: 12.5px; color: #9B9A90">from PACs &amp; committees</div>
+            </div>
+            <div style="display: flex; height: 3px; background: #26272B; margin-top: 20px">
+              <div style="height: 3px; background: #E0B23C; width: {{ pol.pacW }}"></div>
+            </div>
+            <div style="font-size: 11.5px; color: #96958B; margin-top: 9px">{{ pol.indivFmt }} from individual contributors</div>
+          </div>
+        </section>
+
+        <section style="display: grid; grid-template-columns: 1fr 1.35fr; gap: 56px; padding: 36px 0 0 0">
+          <div>
+            <div style="font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: #96958B; padding-bottom: 14px; border-bottom: 1px solid #232427">Sector breakdown</div>
+            <sc-for list="{{ pol.industries }}" as="ind" hint-placeholder-count="5">
+              <div onClick="{{ ind.open }}" style="cursor: pointer; padding: 15px 0; border-bottom: 1px solid #1B1C1F">
+                <div style="display: flex; justify-content: space-between; gap: 14px; align-items: baseline">
+                  <span style="font-size: 13.5px; letter-spacing: 0.01em">{{ ind.name }}</span>
+                  <span style="font-size: 14px; color: #9B9A90; font-variant-numeric: tabular-nums">{{ ind.amtFmt }}</span>
+                </div>
+                <div style="display: flex; height: 2px; background: #26272B; margin-top: 11px">
+                  <div style="height: 2px; background: #E4322B; width: {{ ind.w }}"></div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 14px; border-bottom: 1px solid #232427; gap: 14px; flex-wrap: wrap">
+              <div style="font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: #96958B">Largest donors</div>
+              <div style="font-size: 11.5px; color: #8A897F">Open a donor to see everyone they fund</div>
+            </div>
+            <sc-for list="{{ pol.donors }}" as="d" hint-placeholder-count="6">
+              <div onClick="{{ d.open }}" style="cursor: pointer; display: grid; grid-template-columns: 1.7fr 1fr 0.8fr; gap: 18px; align-items: center; padding: 16px 0; border-bottom: 1px solid #1B1C1F" style-hover="background: #14151A">
+                <div>
+                  <div style="font-family: 'Playfair Display', serif; font-size: 19px; letter-spacing: -0.01em">{{ d.name }}</div>
+                  <div style="font-size: 11.5px; color: #96958B; margin-top: 3px">{{ d.employer }}</div>
+                </div>
+                <div style="font-size: 12px; color: #9B9A90">{{ d.place }}</div>
+                <div style="text-align: right; font-size: 15px; font-variant-numeric: tabular-nums">{{ d.amtFmt }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </div>
+    </main>
+  </sc-if>
+
+  <sc-if value="{{ isDonor }}" hint-placeholder-val="{{ false }}">
+    <main style="padding: 0 40px">
+      <div style="max-width: 1320px; margin: 0 auto">
+        <button onClick="{{ goBack }}" style="cursor: pointer; border: none; background: transparent; font-family: inherit; font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: #E4322B; padding: 22px 0 0 0">← Back</button>
+        <section style="display: grid; grid-template-columns: 1.6fr 1fr; gap: 50px; padding: 20px 0 40px 0; border-bottom: 1px solid #E4322B; align-items: end">
+          <div>
+            <div style="font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: #E4322B">Donor · {{ donor.sector }}</div>
+            <div style="font-family: 'Playfair Display', serif; font-size: 68px; line-height: 0.96; letter-spacing: -0.03em; margin-top: 14px">{{ donor.name }}</div>
+            <div style="font-size: 15px; color: #9B9A90; margin-top: 14px">{{ donor.employer }} · {{ donor.place }}</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 26px">
+            <div>
+              <div style="font-family: 'Playfair Display', serif; font-size: 40px; letter-spacing: -0.025em; line-height: 1">{{ donor.totalFmt }}</div>
+              <div style="font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #96958B; margin-top: 8px">Total given</div>
+            </div>
+            <div>
+              <div style="font-family: 'Playfair Display', serif; font-size: 40px; letter-spacing: -0.025em; line-height: 1">{{ donor.count }}</div>
+              <div style="font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #96958B; margin-top: 8px">Recipients</div>
+            </div>
+          </div>
+        </section>
+        <section style="padding-top: 30px">
+          <div style="font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: #96958B; padding-bottom: 14px; border-bottom: 1px solid #232427">Who they fund</div>
+          <sc-for list="{{ donor.recipients }}" as="r" hint-placeholder-count="4">
+            <div onClick="{{ r.open }}" style="cursor: pointer; display: grid; grid-template-columns: 2.2fr 1.2fr 1.4fr 0.8fr; gap: 22px; align-items: center; padding: 20px 0; border-bottom: 1px solid #1B1C1F" style-hover="background: #14151A">
+              <div>
+                <div style="font-family: 'Playfair Display', serif; font-size: 24px; letter-spacing: -0.015em">{{ r.name }}</div>
+                <div style="font-size: 11.5px; color: #96958B; margin-top: 3px">{{ r.office }}</div>
+              </div>
+              <div><span style="font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: {{ r.partyInk }}; border: 1px solid {{ r.partyInk }}; padding: 3px 8px">{{ r.partyShort }}</span></div>
+              <div style="font-size: 12px; color: #9B9A90">{{ r.note }}</div>
+              <div style="text-align: right; font-family: 'Playfair Display', serif; font-size: 24px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums">{{ r.amtFmt }}</div>
+            </div>
+          </sc-for>
+        </section>
+      </div>
+    </main>
+  </sc-if>
+
+  <sc-if value="{{ isIndustries }}" hint-placeholder-val="{{ false }}">
+    <main style="padding: 0 40px">
+      <div style="max-width: 1320px; margin: 0 auto">
+        <section style="padding: 38px 0 26px 0; border-bottom: 1px solid #E4322B; display: grid; grid-template-columns: 1.4fr 1fr; gap: 50px; align-items: end">
+          <div>
+            <div style="font-family: 'Playfair Display', serif; font-size: 60px; line-height: 1; letter-spacing: -0.03em">Money by industry</div>
+            <div style="font-size: 13.5px; color: #9B9A90; margin-top: 16px; max-width: 520px; line-height: 1.55">Contributions aggregated across every officeholder in the tracker. Bars are scaled against the largest sector.</div>
+          </div>
+          <div>
+            <div style="font-family: 'Playfair Display', serif; font-size: 40px; letter-spacing: -0.025em; line-height: 1">{{ trackedTotalFmt }}</div>
+            <div style="font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #96958B; margin-top: 8px">Tracked contributions</div>
+          </div>
+        </section>
+        <sc-for list="{{ industries }}" as="ind" hint-placeholder-count="10">
+          <div style="display: grid; grid-template-columns: 30px 1.5fr 2fr 1fr; gap: 24px; align-items: center; padding: 22px 0; border-bottom: 1px solid #1B1C1F">
+            <div style="font-size: 11px; color: #8A897F">{{ ind.rank }}</div>
+            <div>
+              <div style="font-family: 'Playfair Display', serif; font-size: 23px; letter-spacing: -0.015em">{{ ind.name }}</div>
+              <div style="font-size: 11.5px; color: #96958B; margin-top: 3px">{{ ind.donorCount }} donors tracked</div>
+            </div>
+            <div>
+              <div style="display: flex; height: 3px; background: #26272B">
+                <div style="height: 3px; background: #E4322B; width: {{ ind.w }}"></div>
+              </div>
+              <div style="font-size: 11.5px; color: #9B9A90; margin-top: 10px">Top recipient — {{ ind.top }}</div>
+            </div>
+            <div style="text-align: right">
+              <div style="font-size: 17px; font-variant-numeric: tabular-nums">{{ ind.amtFmt }}</div>
+              <div style="font-size: 11px; color: #8E8D83; margin-top: 4px">{{ ind.shareFmt }} of tracked</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </main>
+  </sc-if>
+
+  <sc-if value="{{ isCompare }}" hint-placeholder-val="{{ false }}">
+    <main style="padding: 0 40px">
+      <div style="max-width: 1320px; margin: 0 auto">
+        <section style="padding: 38px 0 24px 0; border-bottom: 1px solid #E4322B; display: flex; justify-content: space-between; align-items: end; gap: 30px; flex-wrap: wrap">
+          <div>
+            <div style="font-family: 'Playfair Display', serif; font-size: 60px; line-height: 1; letter-spacing: -0.03em">Side by side</div>
+            <div style="font-size: 13.5px; color: #9B9A90; margin-top: 16px">Up to four officeholders. Selections carry over from the roster.</div>
+          </div>
+          <button onClick="{{ clearCompare }}" style="cursor: pointer; border: 1px solid #2E2F31; background: transparent; color: #9B9A90; font-family: inherit; font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; padding: 10px 16px">Clear</button>
+        </section>
+
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; padding: 20px 0; border-bottom: 1px solid #232427">
+          <sc-for list="{{ comparePicker }}" as="c" hint-placeholder-count="12">
+            <button onClick="{{ c.toggle }}" style="cursor: pointer; border: none; background: transparent; font-family: inherit; font-size: 12.5px; padding: 0 0 3px 0; color: {{ c.color }}; border-bottom: 1px solid {{ c.border }}">{{ c.name }}</button>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ hasCompare }}" hint-placeholder-val="{{ true }}">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1px; background: #232427; margin-top: 28px">
+            <sc-for list="{{ compared }}" as="p" hint-placeholder-count="2">
+              <div style="background: #0E0F12; padding: 24px 24px 26px 24px">
+                <div style="font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: {{ p.partyInk }}">{{ p.partyShort }}</div>
+                <div style="font-family: 'Playfair Display', serif; font-size: 28px; letter-spacing: -0.02em; line-height: 1.1; margin-top: 8px; cursor: pointer" onClick="{{ p.open }}">{{ p.name }}</div>
+                <div style="font-size: 11.5px; color: #96958B; margin-top: 4px">{{ p.office }}</div>
+                <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 18px">
+                  <sc-for list="{{ p.metrics }}" as="m" hint-placeholder-count="5">
+                    <div>
+                      <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px">
+                        <span style="font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; color: #8E8D83">{{ m.label }}</span>
+                        <span style="font-size: 15px; font-variant-numeric: tabular-nums">{{ m.value }}</span>
+                      </div>
+                      <div style="display: flex; height: 2px; background: #26272B; margin-top: 8px">
+                        <div style="height: 2px; background: {{ m.color }}; width: {{ m.w }}"></div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="margin-top: 26px; padding-top: 14px; border-top: 1px solid #232427">
+                  <div style="font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #8E8D83">Top sectors</div>
+                  <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 7px">
+                    <sc-for list="{{ p.topSectors }}" as="s" hint-placeholder-count="3">
+                      <div style="display: flex; justify-content: space-between; gap: 10px; font-size: 12px"><span style="color: #9B9A90">{{ s.name }}</span><span style="color: #E8E4DC; font-variant-numeric: tabular-nums">{{ s.amtFmt }}</span></div>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noCompare }}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 80px 0; text-align: center; color: #8E8D83; font-size: 13px">Select officeholders above to compare them.</div>
+        </sc-if>
+      </div>
+    </main>
+  </sc-if>
+
+  <sc-if value="{{ isMap }}" hint-placeholder-val="{{ false }}">
+    <main style="padding: 0 40px">
+      <div style="max-width: 1320px; margin: 0 auto">
+        <section style="padding: 38px 0 26px 0; border-bottom: 1px solid #E4322B; display: grid; grid-template-columns: 1.4fr 1fr; gap: 50px; align-items: end">
+          <div>
+            <div style="font-family: 'Playfair Display', serif; font-size: 60px; line-height: 1; letter-spacing: -0.03em">Where the donors are</div>
+            <div style="font-size: 13.5px; color: #9B9A90; margin-top: 16px; max-width: 540px; line-height: 1.55">Schematic map. Circle area is total contributions from donors with that mailing address.</div>
+          </div>
+          <div>
+            <div style="font-family: 'Playfair Display', serif; font-size: 40px; letter-spacing: -0.025em; line-height: 1">{{ outTotalFmt }}</div>
+            <div style="font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: #96958B; margin-top: 8px">From outside Montana</div>
+          </div>
+        </section>
+        <div style="display: grid; grid-template-columns: 1.8fr 1fr; gap: 46px; padding: 30px 0 0 0">
+          <div style="position: relative">
+            <svg viewBox="0 0 640 300" style="width: 100%; height: auto; display: block">
+              <polygon points="{{ mapOutline }}" fill="#15161A" stroke="#2E2F31" stroke-width="1"></polygon>
+              <sc-for list="{{ cities }}" as="c" hint-placeholder-count="8">
+                <g>
+                  <circle cx="{{ c.x }}" cy="{{ c.y }}" r="{{ c.r }}" fill="#E4322B" fill-opacity="0.18" stroke="#E4322B" stroke-width="1"></circle>
+                  <circle cx="{{ c.x }}" cy="{{ c.y }}" r="2" fill="#E4322B"></circle>
+                  <line x1="{{ c.x }}" y1="{{ c.y }}" x2="{{ c.leadX }}" y2="{{ c.labelY }}" stroke="#3A3B3E" stroke-width="0.75"></line>
+                </g>
+              </sc-for>
+            </svg>
+            <sc-for list="{{ cities }}" as="c" hint-placeholder-count="8">
+              <div style="position: absolute; left: {{ c.left }}; top: {{ c.top }}; transform: translateY(-50%); white-space: nowrap; pointer-events: none">
+                <div style="font-size: 11px; color: #E8E4DC; letter-spacing: 0.01em">{{ c.name }}</div>
+                <div style="font-size: 10.5px; color: #96958B; font-variant-numeric: tabular-nums; margin-top: 1px">{{ c.amtFmt }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div>
+            <div style="font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase; color: #96958B; padding-bottom: 12px; border-bottom: 1px solid #232427">Out-of-state sources</div>
+            <sc-for list="{{ outStates }}" as="s" hint-placeholder-count="4">
+              <div style="padding: 16px 0; border-bottom: 1px solid #1B1C1F">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px">
+                  <span style="font-size: 13.5px">{{ s.name }}</span>
+                  <span style="font-size: 14px; color: #9B9A90; font-variant-numeric: tabular-nums">{{ s.amtFmt }}</span>
+                </div>
+                <div style="display: flex; height: 2px; background: #26272B; margin-top: 10px"><div style="height: 2px; background: #E0B23C; width: {{ s.w }}"></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </main>
+  </sc-if>
+
+  <footer style="padding: 40px 40px 0 40px">
+    <div style="max-width: 1320px; margin: 0 auto; border-top: 1px solid #232427; padding-top: 20px; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; font-size: 11px; letter-spacing: 0.08em; color: #8A897F">
+      <div>Montana Money — prototype</div>
+      <div>{{ disclaimer }}</div>
+    </div>
+  </footer>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;disclaimer&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Illustrative sample figures for design review — not actual filing data.&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Content&quot;}}">
+const P = {
+  R: { ink: '#F08A7E', label: 'Republican', short: 'Rep' },
+  D: { ink: '#8FB6E8', label: 'Democrat', short: 'Dem' },
+  N: { ink: '#B5AFA2', label: 'Nonpartisan', short: 'Nonpartisan' }
+};
+
+const POLS = [
+  { id: 'sheehy', name: 'Tim Sheehy', office: 'U.S. Senator', level: 'Federal', party: 'R', raised: 41900000, cash: 1240000, inState: 18, pac: 12,
+    ind: [['Finance & Insurance', 7100000], ['Real Estate', 5400000], ['Defense & Aerospace', 4600000], ['Energy & Natural Resources', 3900000], ['Party Committees', 3100000]] },
+  { id: 'daines', name: 'Steve Daines', office: 'U.S. Senator', level: 'Federal', party: 'R', raised: 12400000, cash: 3180000, inState: 22, pac: 31,
+    ind: [['Energy & Natural Resources', 2300000], ['Leadership PACs', 1900000], ['Health Professionals', 1250000], ['Finance & Insurance', 1100000], ['Agriculture', 840000]] },
+  { id: 'zinke', name: 'Ryan Zinke', office: 'U.S. Rep., District 1', level: 'Federal', party: 'R', raised: 5600000, cash: 890000, inState: 34, pac: 27,
+    ind: [['Energy & Natural Resources', 980000], ['Outfitting & Recreation', 620000], ['Real Estate', 540000], ['Construction', 410000], ['Legal', 260000]] },
+  { id: 'downing', name: 'Troy Downing', office: 'U.S. Rep., District 2', level: 'Federal', party: 'R', raised: 3100000, cash: 410000, inState: 41, pac: 22,
+    ind: [['Finance & Insurance', 690000], ['Agriculture', 480000], ['Energy & Natural Resources', 390000], ['Real Estate', 310000], ['Transportation', 180000]] },
+  { id: 'gianforte', name: 'Greg Gianforte', office: 'Governor', level: 'Statewide', party: 'R', raised: 8200000, cash: 2050000, inState: 57, pac: 9,
+    ind: [['Technology', 1600000], ['Real Estate', 1420000], ['Construction', 980000], ['Agriculture', 760000], ['Health Professionals', 540000]] },
+  { id: 'juras', name: 'Kristen Juras', office: 'Lt. Governor', level: 'Statewide', party: 'R', raised: 640000, cash: 95000, inState: 78, pac: 11,
+    ind: [['Legal', 140000], ['Agriculture', 118000], ['Real Estate', 92000], ['Retail & Hospitality', 61000]] },
+  { id: 'knudsen', name: 'Austin Knudsen', office: 'Attorney General', level: 'Statewide', party: 'R', raised: 1480000, cash: 320000, inState: 63, pac: 18,
+    ind: [['Legal', 340000], ['Energy & Natural Resources', 290000], ['Agriculture', 210000], ['Construction', 160000], ['Retail & Hospitality', 110000]] },
+  { id: 'jacobsen', name: 'Christi Jacobsen', office: 'Secretary of State', level: 'Statewide', party: 'R', raised: 720000, cash: 140000, inState: 71, pac: 14,
+    ind: [['Real Estate', 158000], ['Retail & Hospitality', 121000], ['Agriculture', 96000], ['Construction', 74000]] },
+  { id: 'regier', name: 'Matt Regier', office: 'State Senate President', level: 'Legislature', party: 'R', raised: 210000, cash: 48000, inState: 88, pac: 26,
+    ind: [['Health Professionals', 44000], ['Construction', 36000], ['Real Estate', 29000], ['Agriculture', 24000]] },
+  { id: 'flowers', name: 'Pat Flowers', office: 'Senate Minority Leader', level: 'Legislature', party: 'D', raised: 175000, cash: 39000, inState: 91, pac: 19,
+    ind: [['Education', 38000], ['Outfitting & Recreation', 31000], ['Legal', 22000], ['Health Professionals', 19000]] },
+  { id: 'ler', name: 'Brandon Ler', office: 'Speaker of the House', level: 'Legislature', party: 'R', raised: 128000, cash: 22000, inState: 94, pac: 31,
+    ind: [['Agriculture', 41000], ['Energy & Natural Resources', 26000], ['Transportation', 18000], ['Construction', 14000]] },
+  { id: 'swanson', name: 'Cory Swanson', office: 'Chief Justice, Supreme Court', level: 'Judicial', party: 'N', raised: 480000, cash: 61000, inState: 84, pac: 4,
+    ind: [['Legal', 186000], ['Real Estate', 74000], ['Agriculture', 52000], ['Health Professionals', 38000]] }
+];
+
+const DONORS = [
+  { id: 'd1', name: 'Marlene Hoyt', employer: 'Hoyt Land & Cattle', city: 'Miles City', st: 'MT', sector: 'Agriculture', gave: [['ler', 3300, 'Max primary + general'], ['knudsen', 2900, ''], ['downing', 3300, ''], ['gianforte', 4000, '']] },
+  { id: 'd2', name: 'Douglas Renner', employer: 'Renner Petroleum Partners', city: 'Billings', st: 'MT', sector: 'Energy & Natural Resources', gave: [['daines', 6600, 'Primary + general'], ['zinke', 3300, ''], ['knudsen', 2900, ''], ['sheehy', 6600, '']] },
+  { id: 'd3', name: 'Alexandra Vance', employer: 'Vance Capital Group', city: 'Dallas', st: 'TX', sector: 'Finance & Insurance', gave: [['sheehy', 6600, 'Out-of-state'], ['daines', 6600, 'Out-of-state']] },
+  { id: 'd4', name: 'Peter Ostrand', employer: 'Ostrand Development', city: 'Bozeman', st: 'MT', sector: 'Real Estate', gave: [['gianforte', 4000, ''], ['jacobsen', 1400, ''], ['regier', 1080, ''], ['swanson', 1400, '']] },
+  { id: 'd5', name: 'Frontier Energy PAC', employer: 'Industry committee', city: 'Washington', st: 'DC', sector: 'Energy & Natural Resources', gave: [['daines', 10000, 'Federal PAC limit'], ['zinke', 10000, ''], ['downing', 8000, ''], ['ler', 2000, '']] },
+  { id: 'd6', name: 'Dr. Naomi Ellsworth', employer: 'Big Sky Orthopedics', city: 'Missoula', st: 'MT', sector: 'Health Professionals', gave: [['regier', 1080, ''], ['flowers', 1080, ''], ['daines', 3300, ''], ['swanson', 1400, '']] },
+  { id: 'd7', name: 'Curtis Bellamy', employer: 'Bellamy Outfitters', city: 'Whitefish', st: 'MT', sector: 'Outfitting & Recreation', gave: [['zinke', 3300, ''], ['flowers', 1080, ''], ['gianforte', 2000, '']] },
+  { id: 'd8', name: 'Helen Marchetti', employer: 'Marchetti & Doyle LLP', city: 'Helena', st: 'MT', sector: 'Legal', gave: [['swanson', 1400, ''], ['knudsen', 2900, ''], ['juras', 1400, '']] },
+  { id: 'd9', name: 'Grant Whitmore', employer: 'Whitmore Aerospace', city: 'Colorado Springs', st: 'CO', sector: 'Defense & Aerospace', gave: [['sheehy', 6600, 'Out-of-state'], ['zinke', 3300, 'Out-of-state']] },
+  { id: 'd10', name: 'Treasure State Builders Assn.', employer: 'Trade association PAC', city: 'Great Falls', st: 'MT', sector: 'Construction', gave: [['gianforte', 8000, ''], ['regier', 2000, ''], ['jacobsen', 2000, ''], ['knudsen', 2000, '']] },
+  { id: 'd11', name: 'Susan Kirkbride', employer: 'Retired', city: 'Kalispell', st: 'MT', sector: 'Retail & Hospitality', gave: [['regier', 1080, ''], ['ler', 1080, ''], ['jacobsen', 1400, '']] },
+  { id: 'd12', name: 'Nathan Oyelaran', employer: 'Cascade Software', city: 'Bozeman', st: 'MT', sector: 'Technology', gave: [['gianforte', 4000, ''], ['flowers', 1080, ''], ['sheehy', 3300, '']] },
+  { id: 'd13', name: 'Rebecca Tanner-Voss', employer: 'Tanner Grain Co.', city: 'Great Falls', st: 'MT', sector: 'Agriculture', gave: [['ler', 1080, ''], ['downing', 3300, ''], ['juras', 1400, '']] },
+  { id: 'd14', name: 'Michael Sung', employer: 'Sung Family Office', city: 'Palo Alto', st: 'CA', sector: 'Finance & Insurance', gave: [['flowers', 1080, 'Out-of-state'], ['sheehy', 6600, 'Out-of-state'], ['gianforte', 2000, 'Out-of-state']] }
+];
+
+const CITY_GEO = {
+  'Billings': [-108.5, 45.78], 'Missoula': [-113.99, 46.87], 'Bozeman': [-111.03, 45.68],
+  'Great Falls': [-111.3, 47.5], 'Helena': [-112.03, 46.59], 'Kalispell': [-114.31, 48.19],
+  'Whitefish': [-114.34, 48.41], 'Miles City': [-105.84, 46.4], 'Butte': [-112.53, 46.0]
+};
+const MT_BORDER = [[-116.05,49],[-104.04,49],[-104.04,45],[-111.05,45],[-111.05,44.48],[-112.9,44.48],[-113.45,45.6],[-114.4,46.6],[-114.5,47.4],[-115.7,47.45],[-116.05,48.2]];
+
+const fmt = (n) => n >= 1000000 ? '$' + (n / 1000000).toFixed(n >= 10000000 ? 1 : 2) + 'M' : n >= 1000 ? '$' + Math.round(n / 1000) + 'K' : '$' + n;
+const polById = (id) => POLS.find(p => p.id === id);
+const pad = (i) => String(i + 1).padStart(2, '0');
+
+class Component extends DCLogic {
+  state = { view: 'roster', polId: null, donorId: null, prev: 'roster', level: 'All', sort: 'raised', query: '', compare: ['sheehy', 'gianforte'] };
+
+  go = (view, extra) => this.setState(s => Object.assign({ view, prev: s.view }, extra || {}));
+
+  toggleCmp = (id) => this.setState(s => ({
+    compare: s.compare.includes(id) ? s.compare.filter(x => x !== id) : (s.compare.length >= 4 ? s.compare : s.compare.concat([id]))
+  }));
+
+  proj(lon, lat) {
+    return [((lon + 116.05) / 12.01) * 600 + 20, ((49 - lat) / 4.64) * 260 + 20];
+  }
+
+  polCard(p) {
+    const c = P[p.party];
+    return {
+      id: p.id, name: p.name, office: p.office, level: p.level,
+      party: c.label, partyInk: c.ink, partyShort: c.short,
+      raisedFmt: fmt(p.raised), cashFmt: fmt(p.cash),
+      inStateFmt: p.inState + '%', inStateW: p.inState + '%',
+      open: () => this.go('politician', { polId: p.id })
+    };
+  }
+
+  industryTotals() {
+    const map = {};
+    POLS.forEach(p => p.ind.forEach(([n, a]) => {
+      if (!map[n]) map[n] = { name: n, amt: 0, top: '', topAmt: 0 };
+      map[n].amt += a;
+      if (a > map[n].topAmt) { map[n].topAmt = a; map[n].top = p.name; }
+    }));
+    return Object.values(map).sort((a, b) => b.amt - a.amt);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const q = s.query.trim().toLowerCase();
+    const tabDefs = [['roster', 'Officeholders'], ['industries', 'Industries'], ['compare', 'Compare'], ['map', 'Donor geography']];
+    const active = ['politician', 'donor'].includes(s.view) ? 'roster' : s.view;
+
+    let roster = POLS.filter(p => s.level === 'All' || p.level === s.level);
+    if (q) roster = roster.filter(p => (p.name + ' ' + p.office + ' ' + p.ind.map(i => i[0]).join(' ')).toLowerCase().includes(q));
+    roster = roster.slice().sort((a, b) =>
+      s.sort === 'raised' ? b.raised - a.raised : s.sort === 'instate' ? b.inState - a.inState : a.name.localeCompare(b.name));
+
+    const maxRaised = Math.max.apply(null, POLS.map(p => p.raised));
+    const industries = this.industryTotals();
+    const trackedTotal = industries.reduce((t, i) => t + i.amt, 0);
+    const indDonorCount = (name) => DONORS.filter(d => d.sector === name).length;
+
+    const vals = {
+      disclaimer: this.props.disclaimer ?? 'Illustrative sample figures for design review — not actual filing data.',
+      query: s.query,
+      onQuery: (e) => this.setState({ query: e.target.value }),
+      trackedTotalFmt: fmt(trackedTotal),
+      tabs: tabDefs.map(([id, label]) => ({
+        label, go: () => this.go(id),
+        color: active === id ? '#E8E4DC' : '#8E8D83',
+        line: active === id ? 'inset 0 -1px 0 0 #E4322B' : 'none'
+      })),
+      isRoster: s.view === 'roster', isPolitician: s.view === 'politician', isDonor: s.view === 'donor',
+      isIndustries: s.view === 'industries', isCompare: s.view === 'compare', isMap: s.view === 'map',
+      goRoster: () => this.go('roster'), goCompare: () => this.go('compare'),
+      goBack: () => this.go(s.prev === 'donor' ? 'roster' : s.prev),
+      hasCompare: s.compare.length > 0, noCompare: s.compare.length === 0, compareCount: s.compare.length,
+      clearCompare: () => this.setState({ compare: [] }),
+      headline: [
+        { label: 'Officeholders', value: String(POLS.length), note: 'Federal, statewide, legislative, judicial' },
+        { label: 'Tracked money', value: fmt(trackedTotal), note: 'Across all listed campaigns' },
+        { label: 'Named donors', value: String(DONORS.length), note: 'Individuals, PACs and committees' },
+        { label: 'Median in-state', value: '67%', note: 'Share of itemized contributions' }
+      ],
+      levels: ['All', 'Federal', 'Statewide', 'Legislature', 'Judicial'].map(l => ({
+        label: l, go: () => this.setState({ level: l }),
+        color: s.level === l ? '#E8E4DC' : '#8E8D83',
+        border: s.level === l ? '#E4322B' : 'transparent'
+      })),
+      sorts: [['raised', 'Total raised'], ['instate', 'In-state %'], ['name', 'Name']].map(([id, label]) => ({
+        label, go: () => this.setState({ sort: id }),
+        color: s.sort === id ? '#E8E4DC' : '#8E8D83',
+        border: s.sort === id ? '#E4322B' : 'transparent'
+      })),
+      roster: roster.map((p, i) => Object.assign(this.polCard(p), {
+        rank: pad(i),
+        topIndustry: p.ind[0][0],
+        toggleCompare: () => this.toggleCmp(p.id),
+        cmpMark: s.compare.includes(p.id) ? '✓' : '',
+        cmpBg: s.compare.includes(p.id) ? '#E4322B' : 'transparent',
+        cmpInk: s.compare.includes(p.id) ? '#0E0F12' : '#8E8D83',
+        cmpBorder: s.compare.includes(p.id) ? '#E4322B' : '#2E2F31'
+      })),
+      rosterEmpty: roster.length === 0,
+      industries: industries.map((i, n) => ({
+        rank: pad(n), name: i.name, amtFmt: fmt(i.amt), w: Math.round((i.amt / industries[0].amt) * 100) + '%',
+        shareFmt: (i.amt / trackedTotal * 100).toFixed(1) + '%', top: i.top, donorCount: indDonorCount(i.name)
+      })),
+      comparePicker: POLS.map(p => ({
+        name: p.name, toggle: () => this.toggleCmp(p.id),
+        color: s.compare.includes(p.id) ? '#E8E4DC' : '#8E8D83',
+        border: s.compare.includes(p.id) ? '#E4322B' : 'transparent'
+      })),
+      compared: s.compare.map(polById).filter(Boolean).map(p => Object.assign(this.polCard(p), {
+        metrics: [
+          { label: 'Total raised', value: fmt(p.raised), w: Math.round(p.raised / maxRaised * 100) + '%', color: '#E8E4DC' },
+          { label: 'Cash on hand', value: fmt(p.cash), w: Math.round(p.cash / 3180000 * 100) + '%', color: '#9B9A90' },
+          { label: 'In-state', value: p.inState + '%', w: p.inState + '%', color: '#E4322B' },
+          { label: 'PAC share', value: p.pac + '%', w: p.pac + '%', color: '#E0B23C' },
+          { label: 'Out-of-state', value: (100 - p.inState) + '%', w: (100 - p.inState) + '%', color: '#8FB6E8' }
+        ],
+        topSectors: p.ind.slice(0, 3).map(([n, a]) => ({ name: n, amtFmt: fmt(a) }))
+      }))
+    };
+
+    const p = polById(s.polId) || POLS[0];
+    const indTotal = p.ind.reduce((t, i) => t + i[1], 0);
+    vals.pol = Object.assign(this.polCard(p), {
+      cycle: '2026 cycle',
+      outStateFmt: (100 - p.inState) + '%',
+      pacFmt: p.pac + '%', pacW: p.pac + '%', indivFmt: (100 - p.pac) + '%',
+      industries: p.ind.map(([n, a]) => ({
+        name: n, amtFmt: fmt(a), w: Math.round(a / indTotal * 100) + '%',
+        open: () => this.go('industries')
+      })),
+      donors: DONORS.filter(d => d.gave.some(g => g[0] === p.id))
+        .map(d => { const g = d.gave.find(x => x[0] === p.id); return { d, amt: g[1] }; })
+        .sort((a, b) => b.amt - a.amt)
+        .map(({ d, amt }) => ({
+          name: d.name, employer: d.employer, place: d.city + ', ' + d.st, amtFmt: '$' + amt.toLocaleString(),
+          open: () => this.go('donor', { donorId: d.id })
+        }))
+    });
+
+    const dn = DONORS.find(d => d.id === s.donorId) || DONORS[0];
+    vals.donor = {
+      name: dn.name, employer: dn.employer, place: dn.city + ', ' + dn.st, sector: dn.sector,
+      totalFmt: '$' + dn.gave.reduce((t, g) => t + g[1], 0).toLocaleString(),
+      count: String(dn.gave.length),
+      recipients: dn.gave.slice().sort((a, b) => b[1] - a[1]).map(([pid, amt, note]) => {
+        const r = polById(pid);
+        return Object.assign(this.polCard(r), { amtFmt: '$' + amt.toLocaleString(), note: note || 'Itemized contribution' });
+      })
+    };
+
+    const cityTotals = {};
+    DONORS.filter(d => d.st === 'MT').forEach(d => {
+      cityTotals[d.city] = (cityTotals[d.city] || 0) + d.gave.reduce((t, g) => t + g[1], 0);
+    });
+    const maxCity = Math.max.apply(null, Object.values(cityTotals));
+    vals.mapOutline = MT_BORDER.map(([lo, la]) => this.proj(lo, la).map(v => v.toFixed(1)).join(',')).join(' ');
+    const placed = Object.keys(cityTotals).map(name => {
+      const [x, y] = this.proj(CITY_GEO[name][0], CITY_GEO[name][1]);
+      const r = 8 + Math.sqrt(cityTotals[name] / maxCity) * 22;
+      return { name, x, y, r, labelY: y, amt: cityTotals[name] };
+    }).sort((a, b) => a.y - b.y);
+    placed.forEach((c, i) => {
+      for (let j = 0; j < i; j++) {
+        const o = placed[j];
+        if (Math.abs(o.x - c.x) < 120 && c.labelY - o.labelY < 34) c.labelY = o.labelY + 34;
+      }
+    });
+    vals.cities = placed.map(c => {
+      const leadX = c.x + c.r + 10;
+      return {
+        name: c.name, x: c.x.toFixed(1), y: c.y.toFixed(1), r: c.r.toFixed(1),
+        leadX: leadX.toFixed(1), labelY: c.labelY.toFixed(1),
+        left: (leadX / 640 * 100).toFixed(2) + '%',
+        top: (c.labelY / 300 * 100).toFixed(2) + '%',
+        amtFmt: '$' + c.amt.toLocaleString()
+      };
+    });
+
+    const stTotals = {};
+    DONORS.filter(d => d.st !== 'MT').forEach(d => {
+      stTotals[d.st] = (stTotals[d.st] || 0) + d.gave.reduce((t, g) => t + g[1], 0);
+    });
+    const stNames = { TX: 'Texas', CO: 'Colorado', CA: 'California', DC: 'District of Columbia' };
+    const stList = Object.keys(stTotals).sort((a, b) => stTotals[b] - stTotals[a]);
+    const stMax = stTotals[stList[0]];
+    vals.outStates = stList.map(k => ({ name: stNames[k] || k, amtFmt: '$' + stTotals[k].toLocaleString(), w: Math.round(stTotals[k] / stMax * 100) + '%' }));
+    vals.outTotalFmt = '$' + Object.values(stTotals).reduce((t, v) => t + v, 0).toLocaleString();
+
+    return vals;
+  }
+}
+
+</script>
+</body>
+</html>

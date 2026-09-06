@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ground: #0e0f12;
+  --color-ground-raised: #14151a;
+  --color-ground-panel: #15161a;
+
+  --color-ink: #e8e4dc;
+  --color-ink-secondary: #9b9a90;
+  --color-ink-tertiary: #96958b;
+  --color-ink-quiet: #8e8d83;
+  --color-ink-faint: #8a897f;
+
+  --color-accent: #e4322b;
+  --color-accent-hover: #ff6a5e;
+  --color-gold: #e0b23c;
+
+  --color-rule: #232427;
+  --color-rule-faint: #1b1c1f;
+  --color-track: #26272b;
+  --color-border: #2e2f31;
+  --color-lead-line: #3a3b3e;
+
+  --color-party-r: #f08a7e;
+  --color-party-d: #8fb6e8;
+  --color-party-n: #b5afa2;
+
+  --font-display: var(--font-display-src), ui-serif, Georgia, serif;
+  --font-sans: var(--font-sans-src), ui-sans-serif, system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-ground);
+}
+
+body {
+  background: var(--color-ground);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+@layer components {
+  /* Playfair display roles */
+  .text-masthead {
+    font-family: var(--font-display);
+    font-size: 42px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 0.95;
+  }
+  .text-page-headline {
+    font-family: var(--font-display);
+    font-size: 60px;
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .text-detail-name {
+    font-family: var(--font-display);
+    font-size: 76px;
+    font-weight: 400;
+    letter-spacing: -0.035em;
+    line-height: 0.94;
+  }
+  .text-donor-page-name {
+    font-family: var(--font-display);
+    font-size: 68px;
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    line-height: 0.96;
+  }
+  .text-stat-headline {
+    font-family: var(--font-display);
+    font-size: 46px;
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    line-height: 1;
+  }
+  .text-stat-secondary {
+    font-family: var(--font-display);
+    font-size: 40px;
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    line-height: 1;
+  }
+  .text-percent-callout {
+    font-family: var(--font-display);
+    font-size: 54px;
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+  .text-roster-name {
+    font-family: var(--font-display);
+    font-size: 25px;
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+  }
+  .text-roster-amount {
+    font-family: var(--font-display);
+    font-size: 27px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+  .text-donor-row-name {
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+  .text-recipient-name {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+  .text-compare-name {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  /* Archivo UI roles */
+  .text-eyebrow {
+    font-family: var(--font-sans);
+    font-size: 10.5px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  .text-metric-label {
+    font-family: var(--font-sans);
+    font-size: 10.5px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .text-nav-tab {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+  .text-body-copy {
+    font-family: var(--font-sans);
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  .text-table-value {
+    font-family: var(--font-sans);
+    font-size: 14px;
+  }
+  .text-sub-label {
+    font-family: var(--font-sans);
+    font-size: 11.5px;
+  }
+  .text-btn-cta {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+}

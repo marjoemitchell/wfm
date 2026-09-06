@@ -1,0 +1,36 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+const TABS = [
+  { href: "/", label: "Officeholders", match: (p: string) => p === "/" || p.startsWith("/officeholder") || p.startsWith("/donor") },
+  { href: "/industries", label: "Industries", match: (p: string) => p.startsWith("/industries") },
+  { href: "/compare", label: "Compare", match: (p: string) => p.startsWith("/compare") },
+  { href: "/map", label: "Donor geography", match: (p: string) => p.startsWith("/map") },
+];
+
+export default function Nav() {
+  const pathname = usePathname();
+
+  return (
+    <nav className="sticky top-0 z-10 flex gap-[30px] border-b border-rule bg-ground">
+      {TABS.map((tab) => {
+        const active = tab.match(pathname);
+        return (
+          <Link
+            key={tab.href}
+            href={tab.href}
+            className={`text-nav-tab py-[15px] ${
+              active
+                ? "text-ink shadow-[inset_0_-1px_0_0_var(--color-accent)]"
+                : "text-ink-quiet"
+            }`}
+          >
+            {tab.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}

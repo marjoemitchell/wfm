@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Level {
+  FEDERAL
+  STATEWIDE
+  LEGISLATURE
+  JUDICIAL
+}
+
+enum Party {
+  R
+  D
+  N
+}
+
+enum Source {
+  FEC
+  PLACEHOLDER
+}
+
+model Politician {
+  id             String         @id @default(cuid())
+  slug           String         @unique
+  name           String
+  office         String
+  level          Level
+  party          Party
+  cycle          Int
+  source         Source
+  fecCandidateId String?
+  totalRaised    Decimal        @db.Decimal(14, 2)
+  cashOnHand     Decimal        @db.Decimal(14, 2)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  contributions  Contribution[]
+
+  @@index([level])
+}
+
+model Donor {
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  name          String
+  employer      String?
+  occupation    String?
+  city          String
+  state         String
+  sector        String
+  contributions Contribution[]
+
+  @@index([sector])
+  @@index([state])
+}
+
+model Contribution {
+  id           String     @id @default(cuid())
+  politicianId String
+  donorId      String
+  amount       Decimal    @db.Decimal(12, 2)
+  date         DateTime
+  note         String?
+  isPac        Boolean
+  politician   Politician @relation(fields: [politicianId], references: [id], onDelete: Cascade)
+  donor        Donor      @relation(fields: [donorId], references: [id], onDelete: Cascade)
+
+  @@index([politicianId])
+  @@index([donorId])
+}
