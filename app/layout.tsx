@@ -23,6 +23,11 @@ export const metadata: Metadata = {
     "Tracking Montana officeholders and where their campaign money comes from.",
 };
 
+// Every page (including the built-in /_not-found) renders inside this
+// layout, and the Footer queries the database for data provenance — so
+// nothing here can be statically prerendered at build time.
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${playfair.variable} ${archivo.variable}`}>

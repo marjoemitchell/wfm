@@ -1,5 +1,12 @@
 import "dotenv/config";
-import { defineConfig, env } from "prisma/config";
+import { defineConfig } from "prisma/config";
+
+// `prisma generate` only needs the schema, not a live connection, but
+// loading this config still requires *some* value here — fall back to a
+// placeholder so `generate` (e.g. in a build step) works even before
+// DATABASE_URL is wired up. Real commands (migrate, db seed, the app
+// itself) need the real DATABASE_URL set.
+const databaseUrl = process.env.DATABASE_URL ?? "postgresql://placeholder/placeholder";
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -8,6 +15,6 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: env("DATABASE_URL"),
+    url: databaseUrl,
   },
 });

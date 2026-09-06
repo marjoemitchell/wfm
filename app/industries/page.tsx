@@ -2,8 +2,6 @@ import { getIndustries } from "@/lib/queries";
 import { moneyAbbreviated } from "@/lib/format";
 import IndustryRow from "@/components/industries/IndustryRow";
 
-export const dynamic = "force-dynamic";
-
 export default async function IndustriesPage() {
   const { rows, trackedTotal } = await getIndustries();
   const maxTotal = rows.reduce((m, r) => Math.max(m, r.total), 0);

@@ -3,8 +3,6 @@ import { moneyAbbreviated } from "@/lib/format";
 import MontanaMap from "@/components/map/MontanaMap";
 import OutOfStatePanel from "@/components/map/OutOfStatePanel";
 
-export const dynamic = "force-dynamic";
-
 export default async function MapPage() {
   const { cities, states, outOfStateTotal } = await getMapData();
 

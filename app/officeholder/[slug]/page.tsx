@@ -12,8 +12,6 @@ const PARTY_COLOR: Record<string, string> = {
   N: "var(--color-party-n)",
 };
 
-export const dynamic = "force-dynamic";
-
 export default async function OfficeholderPage(props: PageProps<"/officeholder/[slug]">) {
   const { slug } = await props.params;
   const data = await getPoliticianBySlug(slug);

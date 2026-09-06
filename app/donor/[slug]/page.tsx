@@ -3,8 +3,6 @@ import { getDonorBySlug } from "@/lib/queries";
 import { money } from "@/lib/format";
 import RecipientList from "@/components/donor/RecipientList";
 
-export const dynamic = "force-dynamic";
-
 export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
   const { slug } = await props.params;
   const data = await getDonorBySlug(slug);

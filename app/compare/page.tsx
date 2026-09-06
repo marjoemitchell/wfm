@@ -3,8 +3,6 @@ import { getAllPoliticiansForPicker, getComparePoliticians } from "@/lib/queries
 import Picker from "@/components/compare/Picker";
 import CompareCard from "@/components/compare/CompareCard";
 
-export const dynamic = "force-dynamic";
-
 export default async function ComparePage(props: PageProps<"/compare">) {
   const searchParams = await props.searchParams;
   const idsParam = typeof searchParams.ids === "string" ? searchParams.ids : "";

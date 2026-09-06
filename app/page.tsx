@@ -3,8 +3,6 @@ import FilterBar from "@/components/roster/FilterBar";
 import RosterTable from "@/components/roster/RosterTable";
 import { getRoster, getRosterStats, type RosterSort } from "@/lib/queries";
 
-export const dynamic = "force-dynamic";
-
 export default async function RosterPage(props: PageProps<"/">) {
   const searchParams = await props.searchParams;
   const level = typeof searchParams.level === "string" ? searchParams.level : "All";
