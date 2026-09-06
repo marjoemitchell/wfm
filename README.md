@@ -14,7 +14,6 @@ The original design brief and prototypes this was built from live in [`design/`]
    ```bash
    npm install
    npm run db:migrate   # applies the schema and generates the Prisma client
-   npm run db:seed      # seeds placeholder Statewide/Legislature/Judicial officeholders
    npm run ingest:fec   # pulls real Montana federal candidates + Schedule A data from the FEC
    ```
 3. `npm run dev` and open http://localhost:3000.
@@ -22,7 +21,7 @@ The original design brief and prototypes this was built from live in [`design/`]
 ## Data sources
 
 - **Federal** (US Senate, US House) — real data from the [OpenFEC API](https://api.open.fec.gov/developers/), pulled by `scripts/ingest-fec.ts`. Re-running `npm run ingest:fec` refreshes it.
-- **Statewide, Legislature, Judicial** — Montana's COPP has no public API, so these are fictional placeholder officeholders (`prisma/seed.ts`), clearly marked `source: PLACEHOLDER` in the database and called out in the site footer. Replacing these with real COPP data is the natural next step.
+- **Statewide, Legislature, Judicial** — not yet integrated. Montana's COPP has no public API (only a form-based search portal), so this needs a real scraping/ingestion approach rather than a simple API client. No placeholder data is seeded for these — the roster only shows what's real.
 - **Industry/sector classification** is a keyword heuristic (`scripts/sector-crosswalk.ts`), not a real employer crosswalk — see the comment there.
 
 ## Project structure
@@ -40,6 +39,5 @@ npm run dev          # dev server
 npm run build         # production build
 npm run lint          # eslint
 npm run db:migrate    # prisma migrate dev + generate
-npm run db:seed       # seed placeholder officeholders
 npm run ingest:fec    # pull live FEC data
 ```

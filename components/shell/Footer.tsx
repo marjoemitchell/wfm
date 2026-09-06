@@ -10,7 +10,7 @@ export default async function Footer() {
     <footer className="mt-10 border-t border-rule pt-5 pb-10">
       <div className="flex flex-wrap justify-between gap-2 text-[11px] text-ink-faint" style={{ letterSpacing: "0.08em" }}>
         <span>Montana Money</span>
-        <span>{fecLine} Statewide, legislative, and judicial figures are placeholder data pending Montana COPP integration.</span>
+        <span>{fecLine} Federal officeholders only — statewide, legislative, and judicial data is not yet integrated.</span>
       </div>
     </footer>
   );

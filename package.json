@@ -9,7 +9,6 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev && prisma generate",
-    "db:seed": "prisma db seed",
     "ingest:fec": "tsx scripts/ingest-fec.ts"
   },
   "dependencies": {

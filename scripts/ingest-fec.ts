@@ -129,9 +129,12 @@ async function ingestCandidate(candidate: FecCandidate) {
   console.log(`\n${candidate.name} (${candidate.candidate_id})`);
 
   const totalsRes = await fecGet<{ results: FecTotals[] }>(`/candidate/${candidate.candidate_id}/totals/`, { cycle: CYCLE });
-  const totals = totalsRes.results.find((t) => t.cycle === CYCLE) ?? totalsRes.results[0];
+  // Only an exact match for the target cycle counts — falling back to
+  // whatever OpenFEC returns first would silently attribute a different
+  // (often much older) election's fundraising totals to this cycle.
+  const totals = totalsRes.results.find((t) => t.cycle === CYCLE);
   if (!totals) {
-    console.warn("  no totals found, skipping");
+    console.warn(`  no totals for cycle ${CYCLE}, skipping`);
     return;
   }
 
