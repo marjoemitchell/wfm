@@ -22,6 +22,7 @@ enum Party {
 
 enum Source {
   FEC
+  MT_COPP
   PLACEHOLDER
 }
 
@@ -35,6 +36,7 @@ model Politician {
   cycle          Int
   source         Source
   fecCandidateId String?
+  coppCandidateId String?
   totalRaised    Decimal        @db.Decimal(14, 2)
   cashOnHand     Decimal        @db.Decimal(14, 2)
   createdAt      DateTime       @default(now())
