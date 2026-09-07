@@ -1,4 +1,4 @@
-# Montana Money
+# Who Funds Montana
 
 A public tracker for Montana officeholders' campaign donors — who funds them, in-state vs. out-of-state, PACs vs. individuals, and industry breakdowns. Built with Next.js (App Router), Prisma/Postgres, and Tailwind.
 

@@ -385,54 +385,64 @@ async function main() {
 
       console.log(`\n${office.label} (${year}): ${candidates.length} candidate(s)`);
       for (const candidate of candidates) {
-        try {
-          const party = await getParty(page, office.value, year, candidate.id);
-          const { contributions, totalRaised, cashOnHand } = await processCandidateFinancials(page, office.value, year, candidate.id);
+        // Retry once — occasional transient Postgres connection drops on
+        // long runs shouldn't permanently skip a candidate.
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const party = await getParty(page, office.value, year, candidate.id);
+            const { contributions, totalRaised, cashOnHand } = await processCandidateFinancials(page, office.value, year, candidate.id);
 
-          const slug = slugify(candidate.name);
-          const politician = await db.politician.upsert({
-            where: { slug },
-            create: {
-              slug,
-              name: candidate.name,
-              office: office.label,
-              level: office.level,
-              party,
-              cycle: year,
-              source: "MT_COPP",
-              coppCandidateId: candidate.id,
-              totalRaised,
-              cashOnHand,
-            },
-            update: {
-              office: office.label,
-              level: office.level,
-              party,
-              cycle: year,
-              source: "MT_COPP",
-              coppCandidateId: candidate.id,
-              totalRaised,
-              cashOnHand,
-            },
-          });
+            const slug = slugify(candidate.name);
+            const politician = await db.politician.upsert({
+              where: { slug },
+              create: {
+                slug,
+                name: candidate.name,
+                office: office.label,
+                level: office.level,
+                party,
+                cycle: year,
+                source: "MT_COPP",
+                coppCandidateId: candidate.id,
+                totalRaised,
+                cashOnHand,
+              },
+              update: {
+                office: office.label,
+                level: office.level,
+                party,
+                cycle: year,
+                source: "MT_COPP",
+                coppCandidateId: candidate.id,
+                totalRaised,
+                cashOnHand,
+              },
+            });
 
-          await db.contribution.deleteMany({ where: { politicianId: politician.id } });
+            await db.contribution.deleteMany({ where: { politicianId: politician.id } });
 
-          const rows: { donorId: string; amount: number; date: Date; isPac: boolean }[] = [];
-          for (const c of contributions) {
-            const donorId = await upsertDonor(c);
-            if (!donorId) continue;
-            rows.push({ donorId, amount: c.amount, date: c.date, isPac: c.isPac });
+            const rows: { donorId: string; amount: number; date: Date; isPac: boolean }[] = [];
+            for (const c of contributions) {
+              const donorId = await upsertDonor(c);
+              if (!donorId) continue;
+              rows.push({ donorId, amount: c.amount, date: c.date, isPac: c.isPac });
+            }
+            if (rows.length > 0) {
+              await db.contribution.createMany({ data: rows.map((r) => ({ ...r, politicianId: politician.id })) });
+            }
+
+            candidateCount++;
+            contributionCount += rows.length;
+            console.log(`  ${candidate.name} (${party}): ${rows.length} contributions, $${totalRaised.toFixed(0)} raised`);
+            break;
+          } catch (err) {
+            if (attempt === 2) {
+              console.error(`  failed to ingest ${candidate.name}:`, err);
+            } else {
+              console.warn(`  ${candidate.name} failed, retrying once:`, err);
+              await sleep(2000);
+            }
           }
-          if (rows.length > 0) {
-            await db.contribution.createMany({ data: rows.map((r) => ({ ...r, politicianId: politician.id })) });
-          }
-
-          candidateCount++;
-          contributionCount += rows.length;
-          console.log(`  ${candidate.name} (${party}): ${rows.length} contributions, $${totalRaised.toFixed(0)} raised`);
-        } catch (err) {
-          console.error(`  failed to ingest ${candidate.name}:`, err);
         }
       }
       break; // found data for this office/level at this year — don't try older years

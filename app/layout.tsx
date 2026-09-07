@@ -18,7 +18,7 @@ const archivo = Archivo({
 });
 
 export const metadata: Metadata = {
-  title: "Montana Money",
+  title: "Who Funds Montana",
   description:
     "Tracking Montana officeholders and where their campaign money comes from.",
 };

@@ -139,7 +139,16 @@ async function ingestCandidate(candidate: FecCandidate) {
   }
 
   const committeesRes = await fecGet<{ results: FecCommittee[] }>(`/candidate/${candidate.candidate_id}/committees/`, { cycle: CYCLE });
-  const committeeIds = committeesRes.results.map((c) => c.committee_id);
+  // Only the candidate's own committees — "P" (principal campaign
+  // committee) and "A" (other authorized committee, e.g. a recount fund).
+  // Excluding this let joint fundraising committees ("J") and other
+  // linked-but-not-owned committees inflate the itemized total well past
+  // the candidate's real totals.receipts figure (money raised by a JFC
+  // isn't this candidate's money — it gets split across several
+  // campaigns).
+  const committeeIds = committeesRes.results
+    .filter((c) => c.designation === "P" || c.designation === "A")
+    .map((c) => c.committee_id);
   if (committeeIds.length === 0) {
     console.warn("  no committees found, skipping contributions");
   }
@@ -181,7 +190,14 @@ async function ingestCandidate(candidate: FecCandidate) {
         "/schedules/schedule_a/",
         {
           committee_id: committeeId,
-          two_year_transaction_period: CYCLE,
+          // `two_year_transaction_period` assigns records to FEC's filing
+          // bucket for the committee, not by calendar date — verified
+          // live that a Senate committee's 2023/2024 general-election
+          // contributions still carry period=2026 years later. Explicit
+          // min/max_date is what actually scopes this to real 2025-2026
+          // activity.
+          min_date: `${CYCLE - 1}-01-01`,
+          max_date: `${CYCLE}-12-31`,
           per_page: 100,
           sort: "contribution_receipt_date",
           ...(lastIndexes.last_index ? { last_index: lastIndexes.last_index } : {}),
@@ -230,10 +246,21 @@ async function main() {
 
   console.log(`Found ${candidatesRes.results.length} candidates.`);
   for (const candidate of candidatesRes.results) {
-    try {
-      await ingestCandidate(candidate);
-    } catch (err) {
-      console.error(`  failed to ingest ${candidate.name}:`, err);
+    // The Railway Postgres proxy occasionally drops a connection mid-run
+    // (seen a handful of times across long ingestion runs) — one retry
+    // clears it rather than silently leaving that candidate's data stale.
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        await ingestCandidate(candidate);
+        break;
+      } catch (err) {
+        if (attempt === 2) {
+          console.error(`  failed to ingest ${candidate.name}:`, err);
+        } else {
+          console.warn(`  ${candidate.name} failed, retrying once:`, err);
+          await sleep(2000);
+        }
+      }
     }
   }
 
