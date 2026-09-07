@@ -355,7 +355,19 @@ async function upsertDonor(c: RawContribution): Promise<string | null> {
   return donor.id;
 }
 
+// Fixed arbitrary key for this script's advisory lock — see ingest-fec.ts
+// for why (a Railway redeploy's cutover doesn't instantly kill the
+// previous job process, and two overlapping runs interleaving
+// delete/insert cycles leaves duplicated contribution rows behind).
+const LOCK_KEY = 837462002;
+
 async function main() {
+  const [{ locked }] = await db.$queryRaw<{ locked: boolean }[]>`SELECT pg_try_advisory_lock(${LOCK_KEY}) AS locked`;
+  if (!locked) {
+    console.error("Another ingest-copp run already holds the lock. Exiting without touching data.");
+    process.exit(1);
+  }
+
   // --no-sandbox is required to launch Chromium as root in a container
   // (Railway); harmless locally too.
   const browser = await chromium.launch({ args: ["--no-sandbox"] });
@@ -459,5 +471,6 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
+    await db.$queryRaw`SELECT pg_advisory_unlock(${LOCK_KEY})`.catch(() => {});
     await db.$disconnect();
   });

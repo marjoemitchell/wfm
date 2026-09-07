@@ -235,7 +235,20 @@ async function ingestCandidate(candidate: FecCandidate) {
   console.log(`  ingested ${totalContributions} itemized contributions`);
 }
 
+// Fixed arbitrary key for this script's advisory lock. Prevents two
+// overlapping runs (e.g. a Railway redeploy that doesn't instantly kill
+// the previous job's process) from interleaving delete/insert cycles on
+// the same candidate and leaving duplicated contribution rows behind —
+// which happened in practice, twice.
+const LOCK_KEY = 837462001;
+
 async function main() {
+  const [{ locked }] = await db.$queryRaw<{ locked: boolean }[]>`SELECT pg_try_advisory_lock(${LOCK_KEY}) AS locked`;
+  if (!locked) {
+    console.error("Another ingest-fec run already holds the lock. Exiting without touching data.");
+    process.exit(1);
+  }
+
   console.log(`Ingesting Montana federal candidates for cycle ${CYCLE}...`);
   const candidatesRes = await fecGet<{ results: FecCandidate[] }>("/candidates/search/", {
     state: "MT",
@@ -273,5 +286,6 @@ main()
     process.exitCode = 1;
   })
   .finally(async () => {
+    await db.$queryRaw`SELECT pg_advisory_unlock(${LOCK_KEY})`.catch(() => {});
     await db.$disconnect();
   });
