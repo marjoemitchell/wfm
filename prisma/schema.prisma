@@ -30,6 +30,7 @@ model Politician {
   id             String         @id @default(cuid())
   slug           String         @unique
   name           String
+  sortName       String         @default("")
   office         String
   level          Level
   party          Party

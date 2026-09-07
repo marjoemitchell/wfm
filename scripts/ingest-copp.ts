@@ -25,7 +25,7 @@ import { chromium, type Page } from "playwright";
 import { PrismaClient, type Level, type Party } from "../lib/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { classifySector } from "./sector-crosswalk";
-import { slugify } from "../lib/format";
+import { slugify, parseLastFirstName } from "../lib/format";
 import { createHash } from "node:crypto";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
@@ -404,12 +404,14 @@ async function main() {
             const party = await getParty(page, office.value, year, candidate.id);
             const { contributions, totalRaised, cashOnHand } = await processCandidateFinancials(page, office.value, year, candidate.id);
 
-            const slug = slugify(candidate.name);
+            const { display: name, sortName } = parseLastFirstName(candidate.name);
+            const slug = slugify(name);
             const politician = await db.politician.upsert({
               where: { slug },
               create: {
                 slug,
-                name: candidate.name,
+                name,
+                sortName,
                 office: office.label,
                 level: office.level,
                 party,
@@ -420,6 +422,8 @@ async function main() {
                 cashOnHand,
               },
               update: {
+                name,
+                sortName,
                 office: office.label,
                 level: office.level,
                 party,

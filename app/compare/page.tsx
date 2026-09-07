@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { getAllPoliticiansForPicker, getComparePoliticians } from "@/lib/queries";
-import Picker from "@/components/compare/Picker";
-import CompareCard from "@/components/compare/CompareCard";
+import CompareSlots from "@/components/compare/CompareSlots";
+
+export const dynamic = "force-dynamic";
 
 export default async function ComparePage(props: PageProps<"/compare">) {
   const searchParams = await props.searchParams;
   const idsParam = typeof searchParams.ids === "string" ? searchParams.ids : "";
   const ids = idsParam.split(",").filter(Boolean).slice(0, 4);
 
-  const [options, cards] = await Promise.all([
+  const [allPoliticians, cards] = await Promise.all([
     getAllPoliticiansForPicker(),
     ids.length ? getComparePoliticians(ids) : Promise.resolve([]),
   ]);
@@ -31,21 +32,9 @@ export default async function ComparePage(props: PageProps<"/compare">) {
         </Link>
       </div>
 
-      <Picker options={options} />
-
-      {cards.length > 0 ? (
-        <div
-          className="mt-[1px] grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-px bg-rule"
-        >
-          {cards.map((c) => (
-            <CompareCard key={c.politician.slug} data={c} />
-          ))}
-        </div>
-      ) : (
-        <div className="py-[70px] text-center text-[13px] text-ink-quiet">
-          Pick up to four officeholders to compare.
-        </div>
-      )}
+      <div className="pt-6">
+        <CompareSlots allPoliticians={allPoliticians} cards={cards} />
+      </div>
     </div>
   );
 }

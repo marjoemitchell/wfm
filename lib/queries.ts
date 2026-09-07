@@ -89,7 +89,7 @@ export async function getRoster(params: { level?: string; sort?: RosterSort; que
           }
         : {}),
     },
-    select: { id: true, slug: true, name: true, office: true, party: true, level: true, totalRaised: true },
+    select: { id: true, slug: true, name: true, sortName: true, office: true, party: true, level: true, totalRaised: true },
   });
 
   const derived = await withInStatePct(politicians);
@@ -103,7 +103,7 @@ export async function getRoster(params: { level?: string; sort?: RosterSort; que
 
   const sort = params.sort ?? "raised";
   rows.sort((a, b) => {
-    if (sort === "name") return a.name.localeCompare(b.name);
+    if (sort === "name") return a.sortName.localeCompare(b.sortName);
     if (sort === "instate") return b.inStatePct - a.inStatePct;
     return b.totalRaised - a.totalRaised;
   });
@@ -235,10 +235,11 @@ export async function getIndustries() {
 }
 
 export async function getAllPoliticiansForPicker() {
-  return db.politician.findMany({
-    select: { slug: true, name: true },
-    orderBy: { name: "asc" },
+  const politicians = await db.politician.findMany({
+    select: { slug: true, name: true, sortName: true, office: true, party: true, totalRaised: true },
+    orderBy: { sortName: "asc" },
   });
+  return politicians.map((p) => ({ ...p, totalRaised: toNumber(p.totalRaised) }));
 }
 
 export async function getComparePoliticians(slugs: string[]) {

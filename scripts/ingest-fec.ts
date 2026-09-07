@@ -13,7 +13,7 @@ import { createHash } from "node:crypto";
 import { PrismaClient } from "../lib/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { classifySector } from "./sector-crosswalk";
-import { slugify } from "../lib/format";
+import { slugify, parseLastFirstName } from "../lib/format";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const db = new PrismaClient({ adapter });
@@ -153,12 +153,14 @@ async function ingestCandidate(candidate: FecCandidate) {
     console.warn("  no committees found, skipping contributions");
   }
 
-  const slug = slugify(candidate.name);
+  const { display: name, sortName } = parseLastFirstName(candidate.name);
+  const slug = slugify(name);
   const politician = await db.politician.upsert({
     where: { slug },
     create: {
       slug,
-      name: candidate.name,
+      name,
+      sortName,
       office: officeLabel(candidate),
       level: "FEDERAL",
       party: partyCode(candidate.party),
@@ -169,6 +171,8 @@ async function ingestCandidate(candidate: FecCandidate) {
       cashOnHand: totals.cash_on_hand_end_period ?? 0,
     },
     update: {
+      name,
+      sortName,
       office: officeLabel(candidate),
       party: partyCode(candidate.party),
       source: "FEC",

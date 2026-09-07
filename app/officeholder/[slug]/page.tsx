@@ -5,6 +5,7 @@ import { money, partyFullName, levelLabel } from "@/lib/format";
 import MoneySourceBand from "@/components/politician/MoneySourceBand";
 import SectorList from "@/components/politician/SectorList";
 import DonorList from "@/components/politician/DonorList";
+import RecordView from "@/components/officeholder/RecordView";
 
 const PARTY_COLOR: Record<string, string> = {
   R: "var(--color-party-r)",
@@ -21,6 +22,7 @@ export default async function OfficeholderPage(props: PageProps<"/officeholder/[
 
   return (
     <div>
+      <RecordView slug={politician.slug} />
       <Link href="/" className="text-eyebrow inline-block pt-[22px] text-accent">
         ← Officeholders
       </Link>

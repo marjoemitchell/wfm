@@ -18,7 +18,7 @@ export type CompareCardData = {
   topSectors: { name: string; amount: number }[];
 };
 
-export default function CompareCard({ data }: { data: CompareCardData }) {
+export default function CompareCard({ data, onRemove }: { data: CompareCardData; onRemove?: () => void }) {
   const { politician } = data;
 
   const metrics = [
@@ -31,9 +31,16 @@ export default function CompareCard({ data }: { data: CompareCardData }) {
 
   return (
     <div className="bg-ground px-6 pt-6 pb-[26px]">
-      <span className="text-[10.5px] uppercase" style={{ color: PARTY_COLOR[politician.party], letterSpacing: "0.16em" }}>
-        {PARTY_LABEL[politician.party]}
-      </span>
+      <div className="flex items-start justify-between">
+        <span className="text-[10.5px] uppercase" style={{ color: PARTY_COLOR[politician.party], letterSpacing: "0.16em" }}>
+          {PARTY_LABEL[politician.party]}
+        </span>
+        {onRemove && (
+          <button type="button" onClick={onRemove} aria-label={`Remove ${politician.name}`} className="text-ink-quiet hover:text-ink">
+            ×
+          </button>
+        )}
+      </div>
       <Link href={`/officeholder/${politician.slug}`} className="block">
         <div className="text-compare-name mt-2 text-ink">{politician.name}</div>
       </Link>
