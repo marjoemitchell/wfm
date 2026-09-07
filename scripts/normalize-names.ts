@@ -20,27 +20,38 @@ async function main() {
   const politicians = await db.politician.findMany({ select: { id: true, name: true, slug: true } });
   console.log(`Found ${politicians.length} politicians.`);
 
-  const seenSlugs = new Map<string, number>();
   let updated = 0;
+  let skipped = 0;
 
   for (const p of politicians) {
     const { display, sortName } = parseLastFirstName(p.name);
+    if (display === p.name) continue;
+
     let slug = slugify(display);
-    const collisionCount = seenSlugs.get(slug) ?? 0;
-    seenSlugs.set(slug, collisionCount + 1);
-    if (collisionCount > 0) slug = `${slug}-${collisionCount + 1}`;
+    // Ingest jobs are running concurrently and inserting/renaming rows
+    // live, so collisions must be checked against the database at write
+    // time, not just against this script's own in-memory batch.
+    let suffix = 2;
+    for (;;) {
+      const existing = await db.politician.findUnique({ where: { slug }, select: { id: true } });
+      if (!existing || existing.id === p.id) break;
+      slug = `${slugify(display)}-${suffix++}`;
+    }
 
-    if (display === p.name && slug === p.slug) continue;
-
-    await db.politician.update({
-      where: { id: p.id },
-      data: { name: display, sortName, slug },
-    });
-    updated++;
-    console.log(`  ${p.name} -> ${display} (${slug})`);
+    try {
+      await db.politician.update({ where: { id: p.id }, data: { name: display, sortName, slug } });
+      updated++;
+      console.log(`  ${p.name} -> ${display} (${slug})`);
+    } catch (err) {
+      // Another process touched this exact row between our read and
+      // write (e.g. a concurrent ingest run reprocessing it) — safe to
+      // skip, since that process applied an equivalent or newer update.
+      console.warn(`  skipped ${p.name}:`, err instanceof Error ? err.message : err);
+      skipped++;
+    }
   }
 
-  console.log(`\nUpdated ${updated} of ${politicians.length} politicians.`);
+  console.log(`\nUpdated ${updated}, skipped ${skipped}, of ${politicians.length} politicians.`);
 }
 
 main()
