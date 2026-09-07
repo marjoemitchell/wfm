@@ -7,7 +7,7 @@
     "build": "prisma generate && next build",
     "start": "node scripts/run-service.js",
     "lint": "eslint",
-    "postinstall": "prisma generate",
+    "postinstall": "node scripts/postinstall.js",
     "db:migrate": "prisma migrate dev && prisma generate",
     "ingest:fec": "tsx scripts/ingest-fec.ts",
     "ingest:copp": "tsx scripts/ingest-copp.ts"

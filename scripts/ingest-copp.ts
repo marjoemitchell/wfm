@@ -356,12 +356,9 @@ async function upsertDonor(c: RawContribution): Promise<string | null> {
 }
 
 async function main() {
-  // On Railway (or anywhere without Playwright's own browser download —
-  // e.g. Nixpacks builds), CHROMIUM_EXECUTABLE_PATH points at a
-  // system-installed Chromium instead. Unset locally: Playwright uses its
-  // own bundled browser from `npx playwright install chromium`.
-  const executablePath = process.env.CHROMIUM_EXECUTABLE_PATH || undefined;
-  const browser = await chromium.launch({ executablePath, args: ["--no-sandbox"] });
+  // --no-sandbox is required to launch Chromium as root in a container
+  // (Railway); harmless locally too.
+  const browser = await chromium.launch({ args: ["--no-sandbox"] });
   const page = await browser.newPage();
 
   console.log("Reading office list...");

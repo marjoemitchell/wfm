@@ -1,7 +1,0 @@
-# Adds a system Chromium (with its full runtime dependency closure, which
-# Nix resolves automatically) for scripts/ingest-copp.ts to drive via
-# Playwright on Railway, where Playwright's own browser download isn't
-# usable (no apt/system libs the way `playwright install-deps` expects).
-# The web app doesn't need this; it's just extra weight on that build.
-[phases.setup]
-nixPkgs = ["chromium"]
