@@ -23,7 +23,15 @@ let cached: { pathD: string; projection: GeoProjection } | null = null;
 function build() {
   if (cached) return cached;
   const montana = getMontanaFeature();
-  const projection = geoConicConformal().fitSize([MAP_VIEWBOX.width, MAP_VIEWBOX.height], montana);
+  // `fitSize` alone only computes scale/translate — it doesn't touch the
+  // projection's rotation, so with d3's default rotate/parallels (tuned
+  // for nothing in particular) Montana's conic projection came out
+  // visibly sheared. Centering the projection on Montana's own longitude
+  // and standard parallels first is what actually straightens it.
+  const projection = geoConicConformal()
+    .rotate([110, 0])
+    .parallels([45, 49])
+    .fitSize([MAP_VIEWBOX.width, MAP_VIEWBOX.height], montana);
   const pathGenerator = geoPath(projection);
   cached = { pathD: pathGenerator(montana) ?? "", projection };
   return cached;
