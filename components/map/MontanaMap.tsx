@@ -5,11 +5,11 @@ import cityCoords from "@/data/mt-city-coords.json";
 
 const COORDS = cityCoords as unknown as Record<string, [number, number]>;
 
-export default function MontanaMap({ cities }: { cities: { city: string; amount: number }[] }) {
+export default function MontanaMap({ cities, maxLabels = 6 }: { cities: { city: string; amount: number }[]; maxLabels?: number }) {
   const pathD = getMontanaPathD();
   const maxAmount = cities.reduce((m, c) => Math.max(m, c.amount), 0);
 
-  const bubbles = cities
+  const allBubbles = cities
     .map((c) => {
       const coords = COORDS[c.city];
       if (!coords) return null;
@@ -26,12 +26,31 @@ export default function MontanaMap({ cities }: { cities: { city: string; amount:
     })
     .filter((b): b is NonNullable<typeof b> => b !== null);
 
+  // Only the largest few cities get a text label — labeling every city
+  // this map might have data for is what caused labels to collide and
+  // drift off the bottom of the page previously.
+  const topCities = new Set([...allBubbles].sort((a, b) => b.amount - a.amount).slice(0, maxLabels).map((b) => b.city));
+  const bubbles = allBubbles.filter((b) => topCities.has(b.city));
+  const unlabeledBubbles = allBubbles.filter((b) => !topCities.has(b.city));
+
   const labeled = layoutCityLabels(bubbles, MAP_VIEWBOX.height);
 
   return (
     <div className="relative w-full">
       <svg viewBox={`0 0 ${MAP_VIEWBOX.width} ${MAP_VIEWBOX.height}`} width="100%">
         <path d={pathD} fill="var(--color-ground-panel)" stroke="var(--color-border)" strokeWidth={1} />
+        {unlabeledBubbles.map((b) => (
+          <circle
+            key={b.city}
+            cx={b.x}
+            cy={b.y}
+            r={b.radius}
+            fill="var(--color-accent)"
+            fillOpacity={0.18}
+            stroke="var(--color-accent)"
+            strokeWidth={1}
+          />
+        ))}
         {labeled.map((b) => (
           <g key={b.city}>
             {b.labelY !== b.y && (

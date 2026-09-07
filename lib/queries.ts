@@ -284,37 +284,74 @@ export async function getComparePoliticians(slugs: string[]) {
     .sort((a, b) => slugs.indexOf(a.politician.slug) - slugs.indexOf(b.politician.slug));
 }
 
+const COMMITTEE_DOMINATED_THRESHOLD = 0.6;
+
+// FEC city names come through as ALL CAPS; COPP's are mixed case. Without
+// normalizing, "HELENA" and "Helena" show up as separate cities.
+function normalizeCityName(city: string): string {
+  return city
+    .toLowerCase()
+    .split(/(\s+|-)/)
+    .map((part) => (/\s+|-/.test(part) ? part : part.charAt(0).toUpperCase() + part.slice(1)))
+    .join("");
+}
+
 export async function getMapData() {
   const contributions = await db.contribution.findMany({
-    select: { amount: true, donor: { select: { city: true, state: true } } },
+    select: { amount: true, isPac: true, donor: { select: { city: true, state: true } } },
   });
 
-  const cityTotals = new Map<string, number>();
+  const montanaCityTotals = new Map<string, number>();
   const stateTotals = new Map<string, number>();
+  const metroTotals = new Map<string, { city: string; state: string; amount: number; pacAmount: number }>();
+  let inStateTotal = 0;
   let outOfStateTotal = 0;
 
   for (const c of contributions) {
     const amt = toNumber(c.amount);
-    if (c.donor.state === "MT") {
-      cityTotals.set(c.donor.city, (cityTotals.get(c.donor.city) ?? 0) + amt);
+    const state = c.donor.state;
+    const city = normalizeCityName(c.donor.city);
+    stateTotals.set(state, (stateTotals.get(state) ?? 0) + amt);
+
+    if (state === "MT") {
+      inStateTotal += amt;
+      montanaCityTotals.set(city, (montanaCityTotals.get(city) ?? 0) + amt);
     } else {
-      stateTotals.set(c.donor.state, (stateTotals.get(c.donor.state) ?? 0) + amt);
       outOfStateTotal += amt;
+      const key = `${city}|${state}`;
+      const bucket = metroTotals.get(key) ?? { city, state, amount: 0, pacAmount: 0 };
+      bucket.amount += amt;
+      if (c.isPac) bucket.pacAmount += amt;
+      metroTotals.set(key, bucket);
     }
   }
 
+  const total = inStateTotal + outOfStateTotal;
+
+  const topMetros = [...metroTotals.values()]
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 10)
+    .map((m) => ({
+      city: m.city,
+      state: m.state,
+      amount: m.amount,
+      committeeDominated: m.amount > 0 && m.pacAmount / m.amount >= COMMITTEE_DOMINATED_THRESHOLD,
+    }));
+
   return {
-    cities: [...cityTotals.entries()].map(([city, amount]) => ({ city, amount })),
-    states: [...stateTotals.entries()].map(([state, amount]) => ({ state, amount })).sort((a, b) => b.amount - a.amount),
+    montanaCities: [...montanaCityTotals.entries()].map(([city, amount]) => ({ city, amount })),
+    states: [...stateTotals.entries()].map(([state, amount]) => ({ state, amount })),
+    topMetros,
+    inStateTotal,
     outOfStateTotal,
+    inStatePct: total > 0 ? (inStateTotal / total) * 100 : 0,
   };
 }
 
 export async function getDataProvenance() {
-  const latestFec = await db.politician.findFirst({
-    where: { source: "FEC" },
-    orderBy: { updatedAt: "desc" },
-    select: { updatedAt: true },
-  });
-  return { fecUpdatedAt: latestFec?.updatedAt ?? null };
+  const [latestFec, latestCopp] = await Promise.all([
+    db.politician.findFirst({ where: { source: "FEC" }, orderBy: { updatedAt: "desc" }, select: { updatedAt: true } }),
+    db.politician.findFirst({ where: { source: "MT_COPP" }, orderBy: { updatedAt: "desc" }, select: { updatedAt: true } }),
+  ]);
+  return { fecUpdatedAt: latestFec?.updatedAt ?? null, coppUpdatedAt: latestCopp?.updatedAt ?? null };
 }
