@@ -12,6 +12,16 @@ const { execSync } = require("node:child_process");
 execSync("npx prisma generate", { stdio: "inherit" });
 
 if (process.env.SERVICE_ROLE === "ingest-copp") {
+  // TEMP diagnostic: print the exact apt packages Playwright thinks
+  // Chromium needs, so they can be declared for the *runtime* image via
+  // Railway's RAILPACK_DEPLOY_APT_PACKAGES (Railpack installs build-time
+  // apt packages into a layer that doesn't carry into the deploy image).
+  try {
+    execSync("npx playwright install-deps --dry-run chromium", { stdio: "inherit" });
+  } catch {
+    // --dry-run exits non-zero when packages are missing, which they will
+    // be here — we only want the printed list, not to fail the build.
+  }
   execSync("npx playwright install --with-deps chromium", { stdio: "inherit" });
 }
 
