@@ -4,10 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "node scripts/build.js",
     "start": "node scripts/run-service.js",
     "lint": "eslint",
-    "postinstall": "node scripts/postinstall.js",
+    "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev && prisma generate",
     "ingest:fec": "tsx scripts/ingest-fec.ts",
     "ingest:copp": "tsx scripts/ingest-copp.ts"
