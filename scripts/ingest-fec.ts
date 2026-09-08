@@ -66,6 +66,7 @@ type FecCandidate = {
   party: string;
   office: string;
   district: string | null;
+  incumbent_challenge: string | null;
 };
 
 type FecTotals = { cycle: number; receipts: number; cash_on_hand_end_period: number };
@@ -89,11 +90,18 @@ function partyCode(fecParty: string): "R" | "D" | "N" {
   return "N";
 }
 
+// "Office" is only the office's actual current title for a sitting
+// incumbent running for the same seat — otherwise it reads as if they
+// already hold it, which is wrong for a challenger or open-seat run
+// (e.g. Seth Bodnar, a university president who has never held office,
+// showing as "U.S. Senator" rather than a candidate for the seat).
 function officeLabel(candidate: FecCandidate): string {
-  if (candidate.office === "S") return "U.S. Senator";
+  const isIncumbent = candidate.incumbent_challenge === "I";
+  if (candidate.office === "S") return isIncumbent ? "U.S. Senator" : "Candidate for U.S. Senate";
   if (candidate.office === "H") {
     const district = candidate.district && candidate.district !== "00" ? candidate.district : null;
-    return district ? `U.S. Representative, District ${Number(district)}` : "U.S. Representative";
+    if (isIncumbent) return district ? `U.S. Representative, District ${Number(district)}` : "U.S. Representative";
+    return district ? `Candidate for U.S. House, District ${Number(district)}` : "Candidate for U.S. House";
   }
   return "U.S. Candidate";
 }
