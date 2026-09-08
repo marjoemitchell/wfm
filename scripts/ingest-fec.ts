@@ -21,7 +21,7 @@ const db = new PrismaClient({ adapter });
 const API_KEY = process.env.FEC_API_KEY ?? "DEMO_KEY";
 const CYCLE = Number(process.env.FEC_CYCLE ?? "2026");
 const BASE = "https://api.open.fec.gov/v1";
-const MAX_CONTRIBUTIONS_PER_COMMITTEE = 5000; // safety cap, especially under DEMO_KEY's tight rate limit
+const MAX_CONTRIBUTIONS_PER_COMMITTEE = 5000; // safety cap against runaway pagination on a single committee
 
 async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -46,7 +46,13 @@ async function fecGet<T>(path: string, params: Record<string, string | number | 
     if (!res.ok) {
       throw new Error(`FEC API ${res.status} for ${url.pathname}: ${await res.text()}`);
     }
-    await sleep(250); // stay well under rate limits
+    // Our key's limit is a 60-request token bucket that refills at ~1/sec
+    // (confirmed directly against the live API, not the 1000/hour a
+    // "personal key" is nominally supposed to get) — firing faster than
+    // that just burns the whole bucket in a burst and spends the rest of
+    // the run recovering from 429s. Pacing every call to the refill rate
+    // keeps us under it indefinitely instead of bursting and backing off.
+    await sleep(1100);
     return (await res.json()) as T;
   }
   throw new Error(`FEC API rate-limited too many times for ${url.pathname}`);
