@@ -4,7 +4,6 @@ import IndustryRow from "@/components/industries/IndustryRow";
 
 export default async function IndustriesPage() {
   const { rows, trackedTotal } = await getIndustries();
-  const maxTotal = rows.reduce((m, r) => Math.max(m, r.total), 0);
 
   return (
     <div>
@@ -13,7 +12,7 @@ export default async function IndustriesPage() {
           <h1 className="text-page-headline text-ink">Money by industry</h1>
           <p className="text-body-copy mt-3 max-w-[520px] text-ink-secondary">
             Contributions aggregated across every officeholder in the tracker. Bars are scaled against the
-            largest sector.
+            tracked total.
           </p>
         </div>
         <div>
@@ -24,7 +23,7 @@ export default async function IndustriesPage() {
 
       <div>
         {rows.map((row, i) => (
-          <IndustryRow key={row.sector} row={row} index={i} maxTotal={maxTotal} />
+          <IndustryRow key={row.sector} row={row} index={i} />
         ))}
       </div>
     </div>

@@ -8,8 +8,8 @@ export type IndustryRowData = {
   topRecipient: { name: string; slug: string } | null;
 };
 
-export default function IndustryRow({ row, index, maxTotal }: { row: IndustryRowData; index: number; maxTotal: number }) {
-  const barPct = maxTotal > 0 ? (row.total / maxTotal) * 100 : 0;
+export default function IndustryRow({ row, index }: { row: IndustryRowData; index: number }) {
+  const barPct = row.share;
 
   return (
     <div className="grid grid-cols-[30px_1.5fr_2fr_1fr] items-center gap-6 border-b border-rule-faint py-[22px]">
