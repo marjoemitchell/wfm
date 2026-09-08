@@ -206,14 +206,18 @@ async function ingestCandidate(candidate: FecCandidate) {
     },
   });
 
-  // Idempotent re-run: replace this politician's contributions.
-  await db.contribution.deleteMany({ where: { politicianId: politician.id } });
-
-  let totalContributions = 0;
+  // Fetch everything into memory first and only replace this politician's
+  // stored contributions once the whole fetch has succeeded. Deleting
+  // up front (the previous approach) meant a candidate who happened to
+  // hit the rate limit partway through a re-fetch ended up with *less*
+  // data than before the run started — repeatedly, for whichever
+  // high-volume candidate got unlucky that run. Leaving old (stale but
+  // complete) data in place on failure is strictly better than that.
+  const allRows: { donorId: string; amount: number; date: Date; isPac: boolean }[] = [];
   for (const committeeId of committeeIds) {
     let lastIndexes: { last_index?: string; last_contribution_receipt_date?: string } = {};
 
-    while (totalContributions < MAX_CONTRIBUTIONS_PER_COMMITTEE) {
+    while (allRows.length < MAX_CONTRIBUTIONS_PER_COMMITTEE) {
       const page = await fecGet<{ results: FecScheduleARecord[]; pagination: { last_indexes: typeof lastIndexes } }>(
         "/schedules/schedule_a/",
         {
@@ -237,7 +241,6 @@ async function ingestCandidate(candidate: FecCandidate) {
 
       if (page.results.length === 0) break;
 
-      const rows: { donorId: string; amount: number; date: Date; isPac: boolean }[] = [];
       for (const record of page.results) {
         // Conduit processors (WinRed, ActBlue) file a memo-coded Schedule A
         // line for every underlying small-dollar donor repeating the same
@@ -248,7 +251,7 @@ async function ingestCandidate(candidate: FecCandidate) {
         const isPac = record.entity_type !== "IND";
         const donorId = await upsertDonor(record, isPac);
         if (!donorId || !record.contribution_receipt_amount) continue;
-        rows.push({
+        allRows.push({
           donorId,
           amount: record.contribution_receipt_amount,
           date: new Date(record.contribution_receipt_date),
@@ -256,17 +259,17 @@ async function ingestCandidate(candidate: FecCandidate) {
         });
       }
 
-      if (rows.length > 0) {
-        await db.contribution.createMany({ data: rows.map((r) => ({ ...r, politicianId: politician.id })) });
-        totalContributions += rows.length;
-      }
-
       lastIndexes = page.pagination.last_indexes ?? {};
       if (!lastIndexes.last_index) break;
     }
   }
 
-  console.log(`  ingested ${totalContributions} itemized contributions`);
+  await db.contribution.deleteMany({ where: { politicianId: politician.id } });
+  if (allRows.length > 0) {
+    await db.contribution.createMany({ data: allRows.map((r) => ({ ...r, politicianId: politician.id })) });
+  }
+
+  console.log(`  ingested ${allRows.length} itemized contributions`);
 }
 
 // Fixed arbitrary key for this script's advisory lock. Prevents two
