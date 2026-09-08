@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { money, percent, rank } from "@/lib/format";
 
 export type IndustryRowData = {
   sector: string;
+  slug: string;
   total: number;
   share: number;
   donorCount: number;
@@ -12,7 +14,10 @@ export default function IndustryRow({ row, index }: { row: IndustryRowData; inde
   const barPct = row.share;
 
   return (
-    <div className="grid grid-cols-[30px_1.5fr_2fr_1fr] items-center gap-6 border-b border-rule-faint py-[22px]">
+    <Link
+      href={`/industry/${row.slug}`}
+      className="grid grid-cols-[30px_1.5fr_2fr_1fr] items-center gap-6 border-b border-rule-faint py-[22px] hover:bg-ground-raised"
+    >
       <span className="text-[11px] text-ink-quiet">{rank(index)}</span>
       <div>
         <div className="text-[23px] text-ink" style={{ fontFamily: "var(--font-display)" }}>
@@ -34,6 +39,6 @@ export default function IndustryRow({ row, index }: { row: IndustryRowData; inde
         <div className="text-[17px] tabular-nums text-ink">{money(row.total)}</div>
         <div className="text-[11px] text-ink-quiet">{percent(row.share, 1)} of tracked</div>
       </div>
-    </div>
+    </Link>
   );
 }

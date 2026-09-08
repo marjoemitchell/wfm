@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { toNumber } from "@/lib/format";
+import { toNumber, slugify } from "@/lib/format";
 import type { Level } from "@/lib/generated/prisma/enums";
 
 export type RosterSort = "raised" | "instate" | "name";
@@ -223,6 +223,7 @@ export async function getIndustries() {
       const topRecipient = [...bucket.donorAmount.values()].sort((a, b) => b.amount - a.amount)[0];
       return {
         sector,
+        slug: slugify(sector),
         total: bucket.total,
         share: trackedTotal > 0 ? (bucket.total / trackedTotal) * 100 : 0,
         donorCount: bucket.donorIds.size,
@@ -232,6 +233,43 @@ export async function getIndustries() {
     .sort((a, b) => b.total - a.total);
 
   return { rows, trackedTotal };
+}
+
+export async function getSectorBySlug(slug: string) {
+  // Sector is a plain string on Donor, not its own model with a stored
+  // slug — match by slugifying each distinct value rather than a WHERE.
+  const distinctSectors = await db.donor.findMany({ distinct: ["sector"], select: { sector: true } });
+  const sector = distinctSectors.map((d) => d.sector).find((s) => slugify(s) === slug);
+  if (!sector) return null;
+
+  const contributions = await db.contribution.findMany({
+    where: { donor: { sector } },
+    select: {
+      amount: true,
+      donor: { select: { id: true, slug: true, name: true, employer: true, city: true, state: true } },
+    },
+  });
+
+  const byDonor = new Map<string, { slug: string; name: string; employer: string | null; city: string; state: string; amount: number }>();
+  for (const c of contributions) {
+    const amt = toNumber(c.amount);
+    const existing = byDonor.get(c.donor.id);
+    if (existing) existing.amount += amt;
+    else
+      byDonor.set(c.donor.id, {
+        slug: c.donor.slug,
+        name: c.donor.name,
+        employer: c.donor.employer,
+        city: c.donor.city,
+        state: c.donor.state,
+        amount: amt,
+      });
+  }
+
+  const donors = [...byDonor.values()].sort((a, b) => b.amount - a.amount);
+  const total = donors.reduce((sum, d) => sum + d.amount, 0);
+
+  return { sector, total, donorCount: donors.length, donors };
 }
 
 export async function getAllPoliticiansForPicker() {
