@@ -407,7 +407,10 @@ async function main() {
             const { display: name, sortName } = parseLastFirstName(candidate.name);
             const slug = slugify(name);
             const politician = await db.politician.upsert({
-              where: { slug },
+              // Keyed on the stable COPP candidate id, not the derived
+              // slug — see ingest-fec.ts for why keying on slug caused
+              // duplicate rows across re-runs.
+              where: { coppCandidateId: candidate.id },
               create: {
                 slug,
                 name,
@@ -422,6 +425,7 @@ async function main() {
                 cashOnHand,
               },
               update: {
+                slug,
                 name,
                 sortName,
                 office: office.label,
@@ -429,7 +433,6 @@ async function main() {
                 party,
                 cycle: year,
                 source: "MT_COPP",
-                coppCandidateId: candidate.id,
                 totalRaised,
                 cashOnHand,
               },

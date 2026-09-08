@@ -72,6 +72,7 @@ type FecScheduleARecord = {
   contribution_receipt_amount: number;
   contribution_receipt_date: string;
   entity_type: string | null;
+  memo_code: string | null;
 };
 
 function partyCode(fecParty: string): "R" | "D" | "N" {
@@ -156,7 +157,11 @@ async function ingestCandidate(candidate: FecCandidate) {
   const { display: name, sortName } = parseLastFirstName(candidate.name);
   const slug = slugify(name);
   const politician = await db.politician.upsert({
-    where: { slug },
+    // Keyed on the stable FEC candidate id, not the derived slug — the
+    // slug changes whenever name-normalization logic changes, and keying
+    // on it caused every re-run after such a change to create a second
+    // row instead of updating the existing one.
+    where: { fecCandidateId: candidate.candidate_id },
     create: {
       slug,
       name,
@@ -171,12 +176,12 @@ async function ingestCandidate(candidate: FecCandidate) {
       cashOnHand: totals.cash_on_hand_end_period ?? 0,
     },
     update: {
+      slug,
       name,
       sortName,
       office: officeLabel(candidate),
       party: partyCode(candidate.party),
       source: "FEC",
-      fecCandidateId: candidate.candidate_id,
       totalRaised: totals.receipts ?? 0,
       cashOnHand: totals.cash_on_hand_end_period ?? 0,
     },
@@ -215,6 +220,12 @@ async function ingestCandidate(candidate: FecCandidate) {
 
       const rows: { donorId: string; amount: number; date: Date; isPac: boolean }[] = [];
       for (const record of page.results) {
+        // Conduit processors (WinRed, ActBlue) file a memo-coded Schedule A
+        // line for every underlying small-dollar donor repeating the same
+        // bundled transfer amount/date — informational only. Counting
+        // those alongside the real transfer inflated some candidates'
+        // itemized totals to 10-100x their actual FEC-reported receipts.
+        if (record.memo_code) continue;
         const isPac = record.entity_type !== "IND";
         const donorId = await upsertDonor(record, isPac);
         if (!donorId || !record.contribution_receipt_amount) continue;
