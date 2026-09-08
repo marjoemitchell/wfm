@@ -52,7 +52,9 @@ async function fecGet<T>(path: string, params: Record<string, string | number | 
     // that just burns the whole bucket in a burst and spends the rest of
     // the run recovering from 429s. Pacing every call to the refill rate
     // keeps us under it indefinitely instead of bursting and backing off.
-    await sleep(1100);
+    // 1.1s (the exact refill rate) still measurably 429'd under real
+    // network jitter across a long run; 1.4s leaves headroom.
+    await sleep(1400);
     return (await res.json()) as T;
   }
   throw new Error(`FEC API rate-limited too many times for ${url.pathname}`);
@@ -283,19 +285,24 @@ async function main() {
 
   console.log(`Found ${candidatesRes.results.length} candidates.`);
   for (const candidate of candidatesRes.results) {
-    // The Railway Postgres proxy occasionally drops a connection mid-run
-    // (seen a handful of times across long ingestion runs) — one retry
-    // clears it rather than silently leaving that candidate's data stale.
-    for (let attempt = 1; attempt <= 2; attempt++) {
+    // The Railway Postgres proxy occasionally drops a connection mid-run,
+    // and a heavy-pagination candidate can still trip the rate limiter
+    // even at a paced 1 req/sec (no safety margin against jitter). Either
+    // way a failure here means ingestCandidate already wiped that
+    // politician's contributions and only partially reinserted them
+    // before throwing, so a candidate that never succeeds is worse than
+    // one we hadn't touched — worth several attempts with a real cooldown
+    // between them rather than leaving a half-written row.
+    for (let attempt = 1; attempt <= 4; attempt++) {
       try {
         await ingestCandidate(candidate);
         break;
       } catch (err) {
-        if (attempt === 2) {
+        if (attempt === 4) {
           console.error(`  failed to ingest ${candidate.name}:`, err);
         } else {
-          console.warn(`  ${candidate.name} failed, retrying once:`, err);
-          await sleep(2000);
+          console.warn(`  ${candidate.name} failed (attempt ${attempt}), retrying:`, err);
+          await sleep(15000);
         }
       }
     }
