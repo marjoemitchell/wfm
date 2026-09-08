@@ -25,7 +25,7 @@ import { chromium, type Page } from "playwright";
 import { PrismaClient, type Level, type Party } from "../lib/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { classifySector } from "./sector-crosswalk";
-import { slugify, parseLastFirstName } from "../lib/format";
+import { slugify, parseLastFirstName, resolveUniqueSlug } from "../lib/format";
 import { createHash } from "node:crypto";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
@@ -405,7 +405,10 @@ async function main() {
             const { contributions, totalRaised, cashOnHand } = await processCandidateFinancials(page, office.value, year, candidate.id);
 
             const { display: name, sortName } = parseLastFirstName(candidate.name);
-            const slug = slugify(name);
+            const slug = await resolveUniqueSlug(slugify(name), async (s) => {
+              const existing = await db.politician.findUnique({ where: { slug: s }, select: { coppCandidateId: true } });
+              return !!existing && existing.coppCandidateId !== candidate.id;
+            });
             const politician = await db.politician.upsert({
               // Keyed on the stable COPP candidate id, not the derived
               // slug — see ingest-fec.ts for why keying on slug caused

@@ -54,6 +54,20 @@ export function slugify(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+// Two distinct candidates (e.g. the same person running for different
+// offices under separate FEC/COPP candidate ids, or two unrelated people
+// who happen to share a name) can normalize to the same slug. `isTaken`
+// should return false when the slug belongs to the record being written
+// itself (an update, not a real collision) so it isn't needlessly suffixed.
+export async function resolveUniqueSlug(baseSlug: string, isTaken: (slug: string) => Promise<boolean>): Promise<string> {
+  let slug = baseSlug;
+  let suffix = 2;
+  while (await isTaken(slug)) {
+    slug = `${baseSlug}-${suffix++}`;
+  }
+  return slug;
+}
+
 const ROMAN_SUFFIXES = new Set(["II", "III", "IV", "V", "VI", "VII", "VIII", "JR", "JR.", "SR", "SR."]);
 const COURTESY_TITLES = new Set(["MR", "MR.", "MRS", "MRS.", "MS", "MS.", "DR", "DR.", "MISS"]);
 

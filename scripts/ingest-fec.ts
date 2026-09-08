@@ -13,7 +13,7 @@ import { createHash } from "node:crypto";
 import { PrismaClient } from "../lib/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { classifySector } from "./sector-crosswalk";
-import { slugify, parseLastFirstName } from "../lib/format";
+import { slugify, parseLastFirstName, resolveUniqueSlug } from "../lib/format";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const db = new PrismaClient({ adapter });
@@ -161,7 +161,10 @@ async function ingestCandidate(candidate: FecCandidate) {
   }
 
   const { display: name, sortName } = parseLastFirstName(candidate.name);
-  const slug = slugify(name);
+  const slug = await resolveUniqueSlug(slugify(name), async (s) => {
+    const existing = await db.politician.findUnique({ where: { slug: s }, select: { fecCandidateId: true } });
+    return !!existing && existing.fecCandidateId !== candidate.candidate_id;
+  });
   const politician = await db.politician.upsert({
     // Keyed on the stable FEC candidate id, not the derived slug — the
     // slug changes whenever name-normalization logic changes, and keying
