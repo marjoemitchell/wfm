@@ -42,13 +42,6 @@ body {
 
 @layer components {
   /* Playfair display roles */
-  .text-masthead {
-    font-family: var(--font-display);
-    font-size: 42px;
-    font-weight: 500;
-    letter-spacing: -0.02em;
-    line-height: 0.95;
-  }
   .text-page-headline {
     font-family: var(--font-display);
     font-size: 60px;
@@ -161,5 +154,51 @@ body {
     font-size: 11px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
+  }
+
+  /* Wordmark lockup — see LOGO.md (compact / masthead variant) */
+  .logo-mark {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    border: 2px solid var(--color-ink);
+  }
+  .logo-mark__block {
+    flex: 0 0 auto;
+    width: clamp(50px, 12vw, 78px);
+    height: clamp(50px, 12vw, 78px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-accent);
+    color: var(--color-ground);
+    font-family: var(--font-sans);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    font-size: clamp(15px, 3.4vw, 22px);
+    line-height: 1;
+  }
+  .logo-mark__wordmark {
+    font-family: var(--font-display);
+    font-weight: 500;
+    letter-spacing: -0.025em;
+    line-height: 1;
+    font-size: clamp(18px, 4.2vw, 32px);
+    color: var(--color-ink);
+    padding: 13px clamp(12px, 2.6vw, 20px);
+    white-space: nowrap;
+  }
+  @media (max-width: 380px) {
+    .logo-mark {
+      border: none;
+    }
+    .logo-mark__wordmark {
+      display: none;
+    }
+    .logo-mark__block {
+      width: 42px;
+      height: 42px;
+      font-size: 15px;
+    }
   }
 }

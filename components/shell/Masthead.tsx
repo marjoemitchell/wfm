@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Logo from "@/components/shell/Logo";
 
 export default function Masthead() {
   const router = useRouter();
@@ -16,9 +17,9 @@ export default function Masthead() {
 
   return (
     <header className="flex flex-wrap items-end justify-between gap-6 border-b border-accent py-[26px] pt-[26px] pb-[14px]">
-      <div>
-        <h1 className="text-masthead text-ink">Who Funds Montana</h1>
-        <p className="text-eyebrow mt-1 text-ink-faint" style={{ letterSpacing: "0.3em" }}>
+      <div className="min-w-0">
+        <Logo />
+        <p className="text-eyebrow mt-2 text-ink-faint" style={{ letterSpacing: "0.3em" }}>
           Officeholders · Donors · 2026 cycle
         </p>
       </div>
