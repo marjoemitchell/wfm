@@ -77,6 +77,13 @@ export async function getRosterStats() {
 export async function getRoster(params: { level?: string; sort?: RosterSort; query?: string }) {
   const level = params.level && params.level !== "All" ? LEVEL_MAP[params.level] : undefined;
   const query = params.query?.trim();
+  // Match each word in the query independently against the name rather
+  // than requiring the whole phrase as one contiguous substring — a plain
+  // substring match on "Steve Daines" fails against a stored name like
+  // "Steve D. Daines" or "Steven James Daines", since the middle name
+  // breaks the contiguous match even though every word the user typed is
+  // really there.
+  const words = query ? query.split(/\s+/).filter(Boolean) : [];
 
   const politicians = await db.politician.findMany({
     where: {
@@ -84,7 +91,7 @@ export async function getRoster(params: { level?: string; sort?: RosterSort; que
       ...(query
         ? {
             OR: [
-              { name: { contains: query, mode: "insensitive" } },
+              { AND: words.map((w) => ({ name: { contains: w, mode: "insensitive" as const } })) },
               { office: { contains: query, mode: "insensitive" } },
               { contributions: { some: { donor: { sector: { contains: query, mode: "insensitive" } } } } },
             ],

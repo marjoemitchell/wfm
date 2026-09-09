@@ -1,12 +1,26 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Logo from "@/components/shell/Logo";
 
 export default function Masthead() {
   const router = useRouter();
   const [value, setValue] = useState("");
+
+  // A real browser refresh (not a client-side search navigation, which
+  // never produces a "reload"-type navigation entry) should drop back to
+  // the unfiltered roster rather than re-apply whatever search was last
+  // typed — searching again is one keystroke, but there's no way back to
+  // "everyone" from a stale, refreshed search except manually clearing it.
+  useEffect(() => {
+    const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+    if (nav?.type !== "reload") return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("q")) return;
+    url.searchParams.delete("q");
+    router.replace(`${url.pathname}${url.searchParams.toString() ? `?${url.searchParams}` : ""}`);
+  }, [router]);
 
   function onChange(next: string) {
     setValue(next);
