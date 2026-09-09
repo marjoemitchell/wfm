@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSectorBySlug } from "@/lib/queries";
 import { money } from "@/lib/format";
-import DonorList from "@/components/politician/DonorList";
+import SectorDonorList from "@/components/industries/SectorDonorList";
 
 export default async function IndustryPage(props: PageProps<"/industry/[slug]">) {
   const { slug } = await props.params;
@@ -35,7 +35,7 @@ export default async function IndustryPage(props: PageProps<"/industry/[slug]">)
       </div>
 
       <div className="pt-9">
-        <DonorList donors={donors} />
+        <SectorDonorList donors={donors} />
       </div>
     </div>
   );
