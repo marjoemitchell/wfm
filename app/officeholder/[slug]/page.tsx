@@ -24,7 +24,7 @@ export default async function OfficeholderPage(props: PageProps<"/officeholder/[
     <div>
       <RecordView slug={politician.slug} />
       <Link href="/" className="text-eyebrow inline-block pt-[22px] text-accent">
-        ← Officeholders
+        ← Roster
       </Link>
 
       <div className="grid grid-cols-[1.6fr_1fr] items-end gap-[50px] border-b border-accent py-[20px] pb-[40px]">

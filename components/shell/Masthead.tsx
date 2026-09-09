@@ -20,7 +20,7 @@ export default function Masthead() {
       <div className="min-w-0">
         <Logo />
         <p className="text-eyebrow mt-2 text-ink-faint" style={{ letterSpacing: "0.3em" }}>
-          Officeholders · Donors · 2026 cycle
+          Roster · Donors · 2026 cycle
         </p>
       </div>
       <div className="flex min-w-[300px] flex-[0_1_340px] items-center gap-2 border-b border-border pb-2">
