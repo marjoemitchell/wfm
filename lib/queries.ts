@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import { toNumber, slugify } from "@/lib/format";
 import type { Level } from "@/lib/generated/prisma/enums";
@@ -276,54 +277,85 @@ export async function getSectorBySlug(slug: string) {
   return { sector, total, donorCount: donors.length, donors };
 }
 
-export async function getAllPoliticiansForPicker() {
-  const politicians = await db.politician.findMany({
-    select: { slug: true, name: true, sortName: true, office: true, party: true, totalRaised: true },
-    orderBy: { sortName: "asc" },
-  });
-  return politicians.map((p) => ({ ...p, totalRaised: toNumber(p.totalRaised) }));
-}
+// Cached (5 min) — identical for every visitor and only changes when an
+// ingest run does, so there's no reason to re-scan all politicians on
+// every keystroke-driven navigation in the compare picker.
+export const getAllPoliticiansForPicker = unstable_cache(
+  async () => {
+    const politicians = await db.politician.findMany({
+      select: { slug: true, name: true, sortName: true, office: true, party: true, totalRaised: true },
+      orderBy: { sortName: "asc" },
+    });
+    return politicians.map((p) => ({ ...p, totalRaised: toNumber(p.totalRaised) }));
+  },
+  ["all-politicians-picker"],
+  { revalidate: 300 }
+);
+
+const getMaxTotalRaised = unstable_cache(
+  async () => {
+    const result = await db.politician.aggregate({ _max: { totalRaised: true } });
+    return toNumber(result._max.totalRaised ?? 0);
+  },
+  ["max-total-raised"],
+  { revalidate: 300 }
+);
+
+// Cached per politician (5 min) — the compare page re-renders on every
+// add/remove in the picker (it reads searchParams, so it can't be a
+// purely static page), and without this, adding a 4th candidate redid
+// the full contribution-aggregation for the 3 that hadn't changed too.
+// Fetching thousands of contribution rows per candidate on every click
+// was the actual source of the reported delay.
+const getComparePoliticianCard = unstable_cache(
+  async (slug: string) => {
+    const p = await db.politician.findUnique({ where: { slug } });
+    if (!p) return null;
+
+    const rows = await db.contribution.findMany({
+      where: { politicianId: p.id },
+      select: { amount: true, isPac: true, donor: { select: { state: true, sector: true } } },
+    });
+
+    let total = 0;
+    let inState = 0;
+    let pac = 0;
+    let outOfState = 0;
+    const bySector = new Map<string, number>();
+    for (const c of rows) {
+      const amt = toNumber(c.amount);
+      total += amt;
+      if (c.donor.state === "MT") inState += amt;
+      else outOfState += amt;
+      if (c.isPac) pac += amt;
+      bySector.set(c.donor.sector, (bySector.get(c.donor.sector) ?? 0) + amt);
+    }
+    const topSectors = [...bySector.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([name, amount]) => ({ name, amount }));
+
+    return {
+      politician: { ...p, totalRaised: toNumber(p.totalRaised), cashOnHand: toNumber(p.cashOnHand) },
+      inStatePct: total > 0 ? (inState / total) * 100 : 0,
+      pacPct: total > 0 ? (pac / total) * 100 : 0,
+      outOfStatePct: total > 0 ? (outOfState / total) * 100 : 0,
+      topSectors,
+    };
+  },
+  ["compare-politician-card"],
+  { revalidate: 300 }
+);
 
 export async function getComparePoliticians(slugs: string[]) {
-  const politicians = await db.politician.findMany({ where: { slug: { in: slugs } } });
-  const contributions = await db.contribution.findMany({
-    where: { politicianId: { in: politicians.map((p) => p.id) } },
-    select: { politicianId: true, amount: true, isPac: true, donor: { select: { state: true, sector: true } } },
-  });
+  const [cards, maxRaised] = await Promise.all([
+    Promise.all(slugs.map((slug) => getComparePoliticianCard(slug))),
+    getMaxTotalRaised(),
+  ]);
 
-  const allPoliticiansMax = await db.politician.aggregate({ _max: { totalRaised: true } });
-  const maxRaised = toNumber(allPoliticiansMax._max.totalRaised ?? 0);
-
-  return politicians
-    .map((p) => {
-      const rows = contributions.filter((c) => c.politicianId === p.id);
-      let total = 0;
-      let inState = 0;
-      let pac = 0;
-      let outOfState = 0;
-      const bySector = new Map<string, number>();
-      for (const c of rows) {
-        const amt = toNumber(c.amount);
-        total += amt;
-        if (c.donor.state === "MT") inState += amt;
-        else outOfState += amt;
-        if (c.isPac) pac += amt;
-        bySector.set(c.donor.sector, (bySector.get(c.donor.sector) ?? 0) + amt);
-      }
-      const topSectors = [...bySector.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
-        .map(([name, amount]) => ({ name, amount }));
-
-      return {
-        politician: { ...p, totalRaised: toNumber(p.totalRaised), cashOnHand: toNumber(p.cashOnHand) },
-        totalRaisedShare: maxRaised > 0 ? toNumber(p.totalRaised) / maxRaised : 0,
-        inStatePct: total > 0 ? (inState / total) * 100 : 0,
-        pacPct: total > 0 ? (pac / total) * 100 : 0,
-        outOfStatePct: total > 0 ? (outOfState / total) * 100 : 0,
-        topSectors,
-      };
-    })
+  return cards
+    .filter((c): c is NonNullable<typeof c> => c !== null)
+    .map((c) => ({ ...c, totalRaisedShare: maxRaised > 0 ? c.politician.totalRaised / maxRaised : 0 }))
     .sort((a, b) => slugs.indexOf(a.politician.slug) - slugs.indexOf(b.politician.slug));
 }
 
