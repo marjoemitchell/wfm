@@ -138,14 +138,19 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
                   // same politician, so slug alone isn't a unique key here.
                   key={`${r.politician.slug}-${i}`}
                   href={`/officeholder/${r.politician.slug}`}
-                  className="grid grid-cols-[1fr_100px_auto] items-center gap-4 border-b border-rule-faint py-3 hover:bg-ground-raised"
+                  // Every column is a fixed/relative unit (no `auto`) — each
+                  // row is its own independent grid, so an auto-sized amount
+                  // column would resize per-row based on that row's own
+                  // digit count, shifting the 1fr name column (and the
+                  // party badge after it) left/right row to row.
+                  className="grid grid-cols-[1fr_100px_100px] items-center gap-4 border-b border-rule-faint py-3 hover:bg-ground-raised"
                 >
                   <div className="min-w-0">
                     <div className="truncate text-[16.5px] text-ink">{r.politician.name}</div>
                     <div className="truncate text-[13px] text-ink-tertiary">{r.politician.office}</div>
                   </div>
                   <PartyChip party={r.politician.party} bordered={false} />
-                  <div className="shrink-0 text-right text-[16px] tabular-nums text-ink">{money(r.amount)}</div>
+                  <div className="text-right text-[16px] tabular-nums text-ink">{money(r.amount)}</div>
                 </Link>
               ))}
             </div>
