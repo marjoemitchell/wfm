@@ -82,7 +82,45 @@ type FecScheduleARecord = {
   contribution_receipt_date: string;
   entity_type: string | null;
   memo_code: string | null;
+  // The contributing committee's own FEC id, present when entity_type is
+  // a PAC/committee rather than an individual — resolves to a real
+  // /committee/{id} record we can pull a designation/org type/registration
+  // date from for the donor-detail summary.
+  contributor_id: string | null;
 };
+
+type FecCommitteeDetail = {
+  designation_full: string | null;
+  organization_type_full: string | null;
+  first_file_date: string | null;
+};
+
+type CommitteeMeta = {
+  fecCommitteeId: string;
+  committeeDesignation: string | null;
+  committeeOrgType: string | null;
+  registeredSince: Date | null;
+};
+
+async function fetchCommitteeMetadata(committeeId: string): Promise<CommitteeMeta | null> {
+  try {
+    const res = await fecGet<{ results: FecCommitteeDetail[] }>(`/committee/${committeeId}/`, {});
+    const c = res.results[0];
+    if (!c) return null;
+    return {
+      fecCommitteeId: committeeId,
+      committeeDesignation: c.designation_full,
+      committeeOrgType: c.organization_type_full,
+      registeredSince: c.first_file_date ? new Date(c.first_file_date) : null,
+    };
+  } catch (err) {
+    // Best-effort enrichment for the donor-detail modal — never let a
+    // failed committee lookup block ingesting the actual contribution
+    // data, which is what the site's core numbers depend on.
+    console.warn(`  committee lookup failed for ${committeeId}:`, err instanceof Error ? err.message : err);
+    return null;
+  }
+}
 
 function partyCode(fecParty: string): "R" | "D" | "N" {
   if (fecParty === "REP") return "R";
@@ -125,9 +163,24 @@ async function upsertDonor(record: FecScheduleARecord, isPac: boolean): Promise<
   const cached = donorIdCache.get(key);
   if (cached) return cached;
 
-  const donor = await db.donor.upsert({
-    where: { slug: key },
-    create: {
+  const existing = await db.donor.findUnique({ where: { slug: key }, select: { id: true, committeeDesignation: true } });
+
+  // Only worth an extra FEC call the first time we see this PAC — either
+  // it's a brand-new donor row, or an existing one we haven't managed to
+  // enrich yet (a prior run's lookup may have failed or been skipped).
+  const meta =
+    isPac && record.contributor_id && (!existing || !existing.committeeDesignation)
+      ? await fetchCommitteeMetadata(record.contributor_id)
+      : null;
+
+  if (existing) {
+    if (meta) await db.donor.update({ where: { id: existing.id }, data: meta } );
+    donorIdCache.set(key, existing.id);
+    return existing.id;
+  }
+
+  const donor = await db.donor.create({
+    data: {
       slug: key,
       name,
       employer,
@@ -135,8 +188,8 @@ async function upsertDonor(record: FecScheduleARecord, isPac: boolean): Promise<
       city,
       state,
       sector: isPac ? "Political Committees" : classifySector(employer, occupation),
+      ...meta,
     },
-    update: {},
   });
   donorIdCache.set(key, donor.id);
   return donor.id;

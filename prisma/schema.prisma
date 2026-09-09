@@ -48,15 +48,23 @@ model Politician {
 }
 
 model Donor {
-  id            String         @id @default(cuid())
-  slug          String         @unique
-  name          String
-  employer      String?
-  occupation    String?
-  city          String
-  state         String
-  sector        String
-  contributions Contribution[]
+  id                   String         @id @default(cuid())
+  slug                 String         @unique
+  name                 String
+  employer             String?
+  occupation           String?
+  city                 String
+  state                String
+  sector               String
+  // Populated best-effort for FEC-sourced PAC/committee donors from FEC's
+  // own /committee/{id} record — never inferred or written by us, so a
+  // null value here just means we haven't looked it up (yet), not that
+  // there's nothing to know.
+  fecCommitteeId       String?
+  committeeDesignation String?
+  committeeOrgType     String?
+  registeredSince      DateTime?
+  contributions        Contribution[]
 
   @@index([sector])
   @@index([state])

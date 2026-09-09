@@ -7,7 +7,17 @@ import PartyChip from "@/components/roster/PartyChip";
 import type { Party } from "@/lib/generated/prisma/enums";
 
 type DonorDetail = {
-  donor: { name: string; sector: string; employer: string | null; city: string; state: string };
+  donor: {
+    name: string;
+    sector: string;
+    employer: string | null;
+    city: string;
+    state: string;
+    fecCommitteeId: string | null;
+    committeeDesignation: string | null;
+    committeeOrgType: string | null;
+    registeredSince: string | null;
+  };
   totalGiven: number;
   recipients: number;
   rows: { politician: { slug: string; name: string; office: string; party: Party }; amount: number; note: string }[];
@@ -80,6 +90,31 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
               {data.donor.city}, {data.donor.state}
             </p>
 
+            {(data.donor.committeeDesignation || data.donor.registeredSince) && (
+              <p className="mt-3 text-[12px] text-ink-tertiary">
+                {[
+                  data.donor.committeeDesignation,
+                  data.donor.committeeOrgType,
+                  data.donor.registeredSince ? `Registered with the FEC since ${new Date(data.donor.registeredSince).getFullYear()}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+                {data.donor.fecCommitteeId && (
+                  <>
+                    {" · "}
+                    <a
+                      href={`https://www.fec.gov/data/committee/${data.donor.fecCommitteeId}/`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-accent hover:underline"
+                    >
+                      View on FEC.gov ↗
+                    </a>
+                  </>
+                )}
+              </p>
+            )}
+
             <div className="mt-5 flex gap-10 border-y border-rule py-4">
               <div>
                 <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 26 }}>
@@ -97,9 +132,11 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
 
             <div className="mt-5">
               <div className="text-eyebrow border-b border-rule pb-2 text-ink-quiet">Who they fund</div>
-              {data.rows.map((r) => (
+              {data.rows.map((r, i) => (
                 <Link
-                  key={r.politician.slug}
+                  // A donor can make several separate contributions to the
+                  // same politician, so slug alone isn't a unique key here.
+                  key={`${r.politician.slug}-${i}`}
                   href={`/officeholder/${r.politician.slug}`}
                   className="flex items-center justify-between gap-4 border-b border-rule-faint py-3 hover:bg-ground-raised"
                 >
