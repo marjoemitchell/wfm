@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { money } from "@/lib/format";
+import { money, formatDate } from "@/lib/format";
 import PartyChip from "@/components/roster/PartyChip";
 import type { Party } from "@/lib/generated/prisma/enums";
 
 export type Recipient = {
   politician: { slug: string; name: string; office: string; party: Party };
   amount: number;
-  note: string;
+  date: Date;
 };
 
 export default function RecipientList({ rows }: { rows: Recipient[] }) {
@@ -28,7 +28,7 @@ export default function RecipientList({ rows }: { rows: Recipient[] }) {
           <div>
             <PartyChip party={r.politician.party} />
           </div>
-          <div className="text-[14px] text-ink-secondary">{r.note}</div>
+          <div className="text-[14px] text-ink-secondary">{formatDate(r.date)}</div>
           <div className="text-recipient-name text-right tabular-nums text-ink">{money(r.amount)}</div>
         </Link>
       ))}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { money } from "@/lib/format";
+import { money, formatDate } from "@/lib/format";
 import PartyChip from "@/components/roster/PartyChip";
 import type { Party } from "@/lib/generated/prisma/enums";
 
@@ -20,7 +20,7 @@ type DonorDetail = {
   };
   totalGiven: number;
   recipients: number;
-  rows: { politician: { slug: string; name: string; office: string; party: Party }; amount: number; note: string }[];
+  rows: { politician: { slug: string; name: string; office: string; party: Party }; amount: number; date: string }[];
 };
 
 export default function DonorModal({ slug, onClose }: { slug: string | null; onClose: () => void }) {
@@ -150,7 +150,10 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
                     <div className="truncate text-[13px] text-ink-tertiary">{r.politician.office}</div>
                   </div>
                   <PartyChip party={r.politician.party} bordered={false} />
-                  <div className="text-right text-[16px] tabular-nums text-ink">{money(r.amount)}</div>
+                  <div className="text-right">
+                    <div className="text-[16px] tabular-nums text-ink">{money(r.amount)}</div>
+                    <div className="text-[12px] text-ink-tertiary">{formatDate(r.date)}</div>
+                  </div>
                 </Link>
               ))}
             </div>

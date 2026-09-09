@@ -2,6 +2,11 @@ export function toNumber(value: { toString(): string } | number): number {
   return typeof value === "number" ? value : Number(value.toString());
 }
 
+export function formatDate(value: Date | string): string {
+  const d = typeof value === "string" ? new Date(value) : value;
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
+
 export function money(value: { toString(): string } | number): string {
   const n = toNumber(value);
   return `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;

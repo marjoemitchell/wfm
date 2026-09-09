@@ -175,7 +175,7 @@ export async function getDonorBySlug(slug: string) {
     where: { donorId: donor.id },
     select: {
       amount: true,
-      note: true,
+      date: true,
       politician: { select: { slug: true, name: true, office: true, party: true } },
     },
     orderBy: { amount: "desc" },
@@ -184,7 +184,7 @@ export async function getDonorBySlug(slug: string) {
   const rows = contributions.map((c) => ({
     politician: c.politician,
     amount: toNumber(c.amount),
-    note: c.note ?? "Itemized contribution",
+    date: c.date,
   }));
 
   const totalGiven = rows.reduce((sum, r) => sum + r.amount, 0);
