@@ -122,6 +122,62 @@ async function fetchCommitteeMetadata(committeeId: string): Promise<CommitteeMet
   }
 }
 
+type FecDisbursement = {
+  recipient_name: string | null;
+  recipient_committee_id: string | null;
+  disbursement_amount: number | null;
+  disbursement_purpose_category: string | null;
+};
+
+type JfcParticipant = { committeeId: string; name: string; amount: number };
+
+// Joint fundraising committees split their proceeds across several
+// participants (the candidate's own campaign, sometimes a party committee
+// or another allied PAC) rather than funding one candidate exclusively.
+// Real participant transfers are on the JFC's own Schedule B, tagged
+// purpose category "TRANSFERS" with a real recipient_committee_id — that
+// reliably excludes ordinary vendor payments (list rental, ad platforms,
+// fundraising consultants), which never have a recipient committee id.
+async function fetchJfcParticipants(committeeId: string): Promise<JfcParticipant[] | null> {
+  try {
+    const byCommittee = new Map<string, JfcParticipant>();
+    let lastIndexes: { last_index?: string; last_disbursement_date?: string } = {};
+    for (let page = 0; page < 5; page++) {
+      const res = await fecGet<{ results: FecDisbursement[]; pagination: { last_indexes: typeof lastIndexes } }>(
+        "/schedules/schedule_b/",
+        {
+          committee_id: committeeId,
+          min_date: `${CYCLE - 1}-01-01`,
+          max_date: `${CYCLE}-12-31`,
+          per_page: 100,
+          sort: "disbursement_date",
+          ...(lastIndexes.last_index ? { last_index: lastIndexes.last_index } : {}),
+          ...(lastIndexes.last_disbursement_date ? { last_disbursement_date: lastIndexes.last_disbursement_date } : {}),
+        }
+      );
+      if (res.results.length === 0) break;
+      for (const r of res.results) {
+        if (r.disbursement_purpose_category !== "TRANSFERS" || !r.recipient_committee_id || !r.disbursement_amount) continue;
+        const existing = byCommittee.get(r.recipient_committee_id);
+        if (existing) existing.amount += r.disbursement_amount;
+        else
+          byCommittee.set(r.recipient_committee_id, {
+            committeeId: r.recipient_committee_id,
+            name: r.recipient_name ?? r.recipient_committee_id,
+            amount: r.disbursement_amount,
+          });
+      }
+      lastIndexes = res.pagination.last_indexes ?? {};
+      if (!lastIndexes.last_index) break;
+    }
+    if (byCommittee.size === 0) return null;
+    return [...byCommittee.values()].sort((a, b) => b.amount - a.amount);
+  } catch (err) {
+    console.warn(`  JFC participant lookup failed for ${committeeId}:`, err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
 function partyCode(fecParty: string): "R" | "D" | "N" {
   if (fecParty === "REP") return "R";
   if (fecParty === "DEM") return "D";
@@ -163,7 +219,10 @@ async function upsertDonor(record: FecScheduleARecord, isPac: boolean): Promise<
   const cached = donorIdCache.get(key);
   if (cached) return cached;
 
-  const existing = await db.donor.findUnique({ where: { slug: key }, select: { id: true, committeeDesignation: true } });
+  const existing = await db.donor.findUnique({
+    where: { slug: key },
+    select: { id: true, committeeDesignation: true, jfcParticipants: true },
+  });
 
   // Only worth an extra FEC call the first time we see this PAC — either
   // it's a brand-new donor row, or an existing one we haven't managed to
@@ -173,8 +232,18 @@ async function upsertDonor(record: FecScheduleARecord, isPac: boolean): Promise<
       ? await fetchCommitteeMetadata(record.contributor_id)
       : null;
 
+  // A joint fundraising committee's proceeds get split across several
+  // participants — worth one more (paginated) call, but only the first
+  // time we confirm the designation and haven't already fetched it.
+  const jfcParticipants =
+    record.contributor_id && meta?.committeeDesignation === "Joint fundraising committee" && (!existing || !existing.jfcParticipants)
+      ? await fetchJfcParticipants(record.contributor_id)
+      : undefined;
+
   if (existing) {
-    if (meta) await db.donor.update({ where: { id: existing.id }, data: meta } );
+    if (meta || jfcParticipants) {
+      await db.donor.update({ where: { id: existing.id }, data: { ...meta, ...(jfcParticipants ? { jfcParticipants } : {}) } });
+    }
     donorIdCache.set(key, existing.id);
     return existing.id;
   }
@@ -189,6 +258,7 @@ async function upsertDonor(record: FecScheduleARecord, isPac: boolean): Promise<
       state,
       sector: isPac ? "Political Committees" : classifySector(employer, occupation),
       ...meta,
+      ...(jfcParticipants ? { jfcParticipants } : {}),
     },
   });
   donorIdCache.set(key, donor.id);

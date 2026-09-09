@@ -31,6 +31,30 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
             {donor.employer ? `${donor.employer} · ` : ""}
             {donor.city}, {donor.state}
           </p>
+          {(donor.committeeDesignation || donor.registeredSince) && (
+            <p className="mt-3 text-[14px] text-ink-tertiary">
+              {[
+                donor.committeeDesignation,
+                donor.committeeOrgType,
+                donor.registeredSince ? `Registered with the FEC since ${donor.registeredSince.getFullYear()}` : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+              {donor.fecCommitteeId && (
+                <>
+                  {" · "}
+                  <a
+                    href={`https://www.fec.gov/data/committee/${donor.fecCommitteeId}/`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent hover:underline"
+                  >
+                    View on FEC.gov ↗
+                  </a>
+                </>
+              )}
+            </p>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -43,6 +67,22 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
           </div>
         </div>
       </div>
+
+      {donor.jfcParticipants && Array.isArray(donor.jfcParticipants) && donor.jfcParticipants.length > 0 && (
+        <div className="pt-9">
+          <div className="text-eyebrow border-b border-rule pb-2 text-ink-quiet">Joint fundraising participants</div>
+          <p className="mt-2 text-[12px] text-ink-faint">
+            This committee splits its proceeds with these committees — amounts are its own transfers to each, not money
+            this candidate received directly.
+          </p>
+          {(donor.jfcParticipants as { committeeId: string; name: string; amount: number }[]).map((p) => (
+            <div key={p.committeeId} className="flex items-center justify-between gap-4 border-b border-rule-faint py-3">
+              <div className="truncate text-[15px] text-ink">{p.name}</div>
+              <div className="shrink-0 text-[15px] tabular-nums text-ink">{money(p.amount)}</div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="pt-9">
         <RecipientList rows={rows} />

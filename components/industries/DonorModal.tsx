@@ -17,6 +17,7 @@ type DonorDetail = {
     committeeDesignation: string | null;
     committeeOrgType: string | null;
     registeredSince: string | null;
+    jfcParticipants: { committeeId: string; name: string; amount: number }[] | null;
   };
   totalGiven: number;
   recipients: number;
@@ -129,6 +130,22 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
                 <div className="text-eyebrow mt-1 text-ink-tertiary">Recipients</div>
               </div>
             </div>
+
+            {data.donor.jfcParticipants && data.donor.jfcParticipants.length > 0 && (
+              <div className="mt-5">
+                <div className="text-eyebrow border-b border-rule pb-2 text-ink-quiet">Joint fundraising participants</div>
+                <p className="mt-2 text-[12px] text-ink-faint">
+                  This committee splits its proceeds with these committees — amounts are its own transfers to each, not
+                  money this candidate received directly.
+                </p>
+                {data.donor.jfcParticipants.map((p) => (
+                  <div key={p.committeeId} className="flex items-center justify-between gap-4 border-b border-rule-faint py-3">
+                    <div className="truncate text-[15px] text-ink">{p.name}</div>
+                    <div className="shrink-0 text-[15px] tabular-nums text-ink">{money(p.amount)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="mt-5">
               <div className="text-eyebrow border-b border-rule pb-2 text-ink-quiet">Who they fund</div>

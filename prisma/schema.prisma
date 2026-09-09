@@ -64,6 +64,10 @@ model Donor {
   committeeDesignation String?
   committeeOrgType     String?
   registeredSince      DateTime?
+  // For joint fundraising committees only: the other committees that share
+  // in its proceeds, derived from its own Schedule B transfer disbursements
+  // (never inferred) — an array of { committeeId, name, amount }.
+  jfcParticipants      Json?
   contributions        Contribution[]
 
   @@index([sector])
