@@ -301,6 +301,14 @@ async function ingestCandidate(candidate: FecCandidate) {
         // those alongside the real transfer inflated some candidates'
         // itemized totals to 10-100x their actual FEC-reported receipts.
         if (record.memo_code) continue;
+        // entity_type "CAN" is the candidate's own money (a personal loan
+        // or contribution to their own campaign, e.g. "JACOBSEN, CHRISTI"
+        // showing up as a top donor to Christi Jacobsen) — not a
+        // third-party donor at all, and definitely not a PAC. It's still
+        // counted in the official totals.receipts figure powering
+        // totalRaised; it just doesn't belong in a "who funds this
+        // candidate" donor breakdown.
+        if (record.entity_type === "CAN") continue;
         const isPac = record.entity_type !== "IND";
         const donorId = await upsertDonor(record, isPac);
         if (!donorId || !record.contribution_receipt_amount) continue;
