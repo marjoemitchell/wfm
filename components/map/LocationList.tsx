@@ -25,7 +25,7 @@ export default function LocationList({
       {rows.map((r) => (
         <div key={r.label} className="py-[15px]">
           <div className="flex items-baseline justify-between">
-            <span className="text-[13.5px] text-ink">
+            <span className="text-[15.5px] text-ink">
               {r.label}
               {r.committeeDominated && (
                 <span
@@ -35,7 +35,7 @@ export default function LocationList({
                 />
               )}
             </span>
-            <span className="text-[14px] tabular-nums text-ink-secondary">{money(r.amount)}</span>
+            <span className="text-[16px] tabular-nums text-ink-secondary">{money(r.amount)}</span>
           </div>
           <div className="mt-2 h-[2px] w-full bg-track">
             <div className="h-[2px]" style={{ width: `${maxAmount > 0 ? (r.amount / maxAmount) * 100 : 0}%`, background: barColor }} />
@@ -43,7 +43,7 @@ export default function LocationList({
         </div>
       ))}
       {footnote && (
-        <p className="mt-4 flex gap-2 text-[11.5px] text-ink-faint">
+        <p className="mt-4 flex gap-2 text-[13.5px] text-ink-faint">
           <span className="mt-[3px] inline-block h-[7px] w-[7px] shrink-0" style={{ background: "var(--color-gold)" }} />
           {footnote}
         </p>

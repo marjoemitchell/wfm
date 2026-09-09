@@ -12,8 +12,8 @@ export default function SectorList({ sectors }: { sectors: { name: string; amoun
           className="block border-b border-rule-faint py-[15px]"
         >
           <div className="flex items-baseline justify-between">
-            <span className="text-[13.5px] text-ink">{s.name}</span>
-            <span className="text-[14px] tabular-nums text-ink-secondary">{money(s.amount)}</span>
+            <span className="text-[15.5px] text-ink">{s.name}</span>
+            <span className="text-[16px] tabular-nums text-ink-secondary">{money(s.amount)}</span>
           </div>
           <div className="mt-2 h-[2px] w-full bg-track">
             <div className="h-[2px] bg-accent" style={{ width: `${Math.min(100, s.share)}%` }} />

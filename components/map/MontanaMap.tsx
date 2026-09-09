@@ -79,8 +79,8 @@ export default function MontanaMap({ cities, maxLabels = 6 }: { cities: { city: 
               transform: "translateY(-50%)",
             }}
           >
-            <div className="text-[11px] text-ink">{b.city}</div>
-            <div className="text-[10.5px] tabular-nums text-ink-secondary">{money(b.amount)}</div>
+            <div className="text-[13px] text-ink">{b.city}</div>
+            <div className="text-[12.5px] tabular-nums text-ink-secondary">{money(b.amount)}</div>
           </div>
         ))}
       </div>

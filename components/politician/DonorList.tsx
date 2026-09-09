@@ -15,7 +15,7 @@ export default function DonorList({ donors }: { donors: TopDonor[] }) {
     <div>
       <div className="flex items-baseline justify-between border-b border-rule pb-3">
         <span className="text-eyebrow text-ink-quiet">Largest donors</span>
-        <span className="text-[11.5px] text-ink-faint">Open a donor to see everyone they fund</span>
+        <span className="text-[13.5px] text-ink-faint">Open a donor to see everyone they fund</span>
       </div>
       {donors.map((d) => (
         <Link
@@ -25,12 +25,12 @@ export default function DonorList({ donors }: { donors: TopDonor[] }) {
         >
           <div>
             <div className="text-donor-row-name text-ink">{d.name}</div>
-            {d.employer && <div className="text-[11.5px] text-ink-tertiary">{d.employer}</div>}
+            {d.employer && <div className="text-[13.5px] text-ink-tertiary">{d.employer}</div>}
           </div>
-          <div className="text-[12px] text-ink-secondary">
+          <div className="text-[14px] text-ink-secondary">
             {d.city}, {d.state}
           </div>
-          <div className="text-right text-[15px] tabular-nums text-ink">{money(d.amount)}</div>
+          <div className="text-right text-[16.5px] tabular-nums text-ink">{money(d.amount)}</div>
         </Link>
       ))}
     </div>

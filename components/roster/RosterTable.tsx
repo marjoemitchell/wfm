@@ -35,7 +35,7 @@ export default function RosterTable({ rows }: { rows: RosterRowData[] }) {
   }
 
   if (rows.length === 0) {
-    return <div className="py-[70px] text-center text-[13px] text-ink-quiet">Nothing matches that search.</div>;
+    return <div className="py-[70px] text-center text-[15px] text-ink-quiet">Nothing matches that search.</div>;
   }
 
   return (
@@ -47,20 +47,20 @@ export default function RosterTable({ rows }: { rows: RosterRowData[] }) {
             key={row.slug}
             className="grid grid-cols-[30px_2.3fr_1.4fr_1.5fr_1fr_40px] items-center gap-[22px] border-b border-rule-faint py-5 hover:bg-ground-raised"
           >
-            <span className="text-[11px] text-ink-quiet">{rank(i)}</span>
+            <span className="text-[13px] text-ink-quiet">{rank(i)}</span>
             <Link href={`/officeholder/${row.slug}`}>
               <div className="text-roster-name text-ink">{row.name}</div>
-              <div className="text-[11.5px] text-ink-tertiary">{row.office}</div>
+              <div className="text-[13.5px] text-ink-tertiary">{row.office}</div>
             </Link>
             <div>
               <PartyChip party={row.party} />
-              <div className="mt-2 text-[11.5px] text-ink-tertiary">{row.topSector}</div>
+              <div className="mt-2 text-[13.5px] text-ink-tertiary">{row.topSector}</div>
             </div>
             <div>
               <div className="h-[2px] w-full bg-track">
                 <div className="h-[2px] bg-accent" style={{ width: `${Math.min(100, row.inStatePct)}%` }} />
               </div>
-              <div className="mt-2 text-[10.5px] uppercase text-ink-quiet" style={{ letterSpacing: "0.1em" }}>
+              <div className="mt-2 text-[12.5px] uppercase text-ink-quiet" style={{ letterSpacing: "0.1em" }}>
                 In-state {percent(row.inStatePct)}
               </div>
             </div>

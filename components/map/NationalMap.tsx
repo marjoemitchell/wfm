@@ -25,14 +25,14 @@ export default function NationalMap({ states }: { states: { state: string; amoun
         })}
       </svg>
       <div className="mt-4 flex items-center gap-3">
-        <span className="text-[10.5px] uppercase text-ink-quiet" style={{ letterSpacing: "0.14em" }}>
+        <span className="text-[12.5px] uppercase text-ink-quiet" style={{ letterSpacing: "0.14em" }}>
           Low
         </span>
         <div
           className="h-[6px] flex-1"
           style={{ background: `linear-gradient(to right, ${sequentialRed(0)}, ${sequentialRed(1)})` }}
         />
-        <span className="text-[10.5px] uppercase text-ink-quiet" style={{ letterSpacing: "0.14em" }}>
+        <span className="text-[12.5px] uppercase text-ink-quiet" style={{ letterSpacing: "0.14em" }}>
           High
         </span>
       </div>

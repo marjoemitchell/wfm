@@ -85,13 +85,13 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
             <h2 className="mt-2 text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: "-0.02em" }}>
               {data.donor.name}
             </h2>
-            <p className="mt-2 text-[13px] text-ink-secondary">
+            <p className="mt-2 text-[15px] text-ink-secondary">
               {data.donor.employer ? `${data.donor.employer} · ` : ""}
               {data.donor.city}, {data.donor.state}
             </p>
 
             {(data.donor.committeeDesignation || data.donor.registeredSince) && (
-              <p className="mt-3 text-[12px] text-ink-tertiary">
+              <p className="mt-3 text-[14px] text-ink-tertiary">
                 {[
                   data.donor.committeeDesignation,
                   data.donor.committeeOrgType,
@@ -141,11 +141,11 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
                   className="flex items-center justify-between gap-4 border-b border-rule-faint py-3 hover:bg-ground-raised"
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-[15px] text-ink">{r.politician.name}</div>
-                    <div className="truncate text-[11px] text-ink-tertiary">{r.politician.office}</div>
+                    <div className="truncate text-[16.5px] text-ink">{r.politician.name}</div>
+                    <div className="truncate text-[13px] text-ink-tertiary">{r.politician.office}</div>
                   </div>
                   <PartyChip party={r.politician.party} bordered={false} />
-                  <div className="shrink-0 text-[14px] tabular-nums text-ink">{money(r.amount)}</div>
+                  <div className="shrink-0 text-[16px] tabular-nums text-ink">{money(r.amount)}</div>
                 </Link>
               ))}
             </div>

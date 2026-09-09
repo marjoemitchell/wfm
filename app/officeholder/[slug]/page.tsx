@@ -33,7 +33,7 @@ export default async function OfficeholderPage(props: PageProps<"/officeholder/[
             {partyFullName(politician.party)} · {levelLabel(politician.level)}
           </div>
           <h1 className="text-detail-name mt-2 text-ink">{politician.name}</h1>
-          <p className="mt-3 text-[15px] text-ink-secondary">
+          <p className="mt-3 text-[16.5px] text-ink-secondary">
             {politician.office} · {politician.cycle} cycle
           </p>
         </div>

@@ -30,7 +30,7 @@ export default function Masthead() {
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Search names, offices, industries"
-          className="w-full bg-transparent text-[14px] text-ink placeholder-ink-quiet outline-none"
+          className="w-full bg-transparent text-[16px] text-ink placeholder-ink-quiet outline-none"
         />
       </div>
     </header>

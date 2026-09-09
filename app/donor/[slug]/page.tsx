@@ -16,7 +16,7 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
         <div>
           <div className="text-eyebrow text-accent">Donor · {donor.sector}</div>
           <h1 className="text-donor-page-name mt-2 text-ink">{donor.name}</h1>
-          <p className="mt-3 text-[15px] text-ink-secondary">
+          <p className="mt-3 text-[16.5px] text-ink-secondary">
             {donor.employer ? `${donor.employer} · ` : ""}
             {donor.city}, {donor.state}
           </p>
