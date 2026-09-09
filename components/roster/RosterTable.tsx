@@ -14,6 +14,7 @@ export type RosterRowData = {
   totalRaised: number;
   inStatePct: number;
   topSector: string;
+  topSectorPct: number;
 };
 
 export default function RosterTable({ rows }: { rows: RosterRowData[] }) {
@@ -55,7 +56,9 @@ export default function RosterTable({ rows }: { rows: RosterRowData[] }) {
               </Link>
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 sm:hidden">
                 <PartyChip party={row.party} />
-                <span className="text-[13.5px] text-ink-tertiary">{row.topSector}</span>
+                <span className="text-[13.5px] text-ink-tertiary">
+                  {row.topSector} · {percent(row.topSectorPct, 0)}
+                </span>
                 <span className="text-[12.5px] uppercase text-ink-quiet" style={{ letterSpacing: "0.1em" }}>
                   In-state {percent(row.inStatePct)}
                 </span>
@@ -63,7 +66,12 @@ export default function RosterTable({ rows }: { rows: RosterRowData[] }) {
             </div>
             <div className="hidden sm:block">
               <PartyChip party={row.party} />
-              <div className="mt-2 text-[13.5px] text-ink-tertiary">{row.topSector}</div>
+              <div className="mt-2 text-[10px] uppercase text-ink-quiet" style={{ letterSpacing: "0.12em" }}>
+                Top sector
+              </div>
+              <div className="text-[13.5px] text-ink-tertiary">
+                {row.topSector} · {percent(row.topSectorPct, 0)}
+              </div>
             </div>
             <div className="hidden sm:block">
               <div className="h-[2px] w-full bg-track">

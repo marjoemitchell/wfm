@@ -21,7 +21,7 @@ function median(values: number[]): number {
 
 async function withInStatePct<T extends { id: string; totalRaised: unknown }>(
   politicians: T[]
-): Promise<Map<string, { inStatePct: number; topSector: string | null; itemizedTotal: number }>> {
+): Promise<Map<string, { inStatePct: number; topSector: string | null; topSectorPct: number; itemizedTotal: number }>> {
   const ids = politicians.map((p) => p.id);
   const contributions = await db.contribution.findMany({
     where: { politicianId: { in: ids } },
@@ -39,7 +39,7 @@ async function withInStatePct<T extends { id: string; totalRaised: unknown }>(
     bucket.bySector.set(c.donor.sector, (bucket.bySector.get(c.donor.sector) ?? 0) + amt);
   }
 
-  const result = new Map<string, { inStatePct: number; topSector: string | null; itemizedTotal: number }>();
+  const result = new Map<string, { inStatePct: number; topSector: string | null; topSectorPct: number; itemizedTotal: number }>();
   for (const [id, bucket] of byPolitician) {
     let topSector: string | null = null;
     let topAmount = -1;
@@ -52,6 +52,7 @@ async function withInStatePct<T extends { id: string; totalRaised: unknown }>(
     result.set(id, {
       inStatePct: bucket.total > 0 ? (bucket.inState / bucket.total) * 100 : 0,
       topSector,
+      topSectorPct: bucket.total > 0 && topAmount > 0 ? (topAmount / bucket.total) * 100 : 0,
       itemizedTotal: bucket.total,
     });
   }
@@ -100,6 +101,7 @@ export async function getRoster(params: { level?: string; sort?: RosterSort; que
     totalRaised: toNumber(p.totalRaised),
     inStatePct: derived.get(p.id)?.inStatePct ?? 0,
     topSector: derived.get(p.id)?.topSector ?? "Other / Unclassified",
+    topSectorPct: derived.get(p.id)?.topSectorPct ?? 0,
   }));
 
   const sort = params.sort ?? "raised";
