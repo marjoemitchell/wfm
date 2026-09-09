@@ -56,12 +56,17 @@ export default function EmptySlot({
 
   const shortlist = useMemo(() => {
     if (results !== null) return null;
-    const topRaisers = [...available].sort((a, b) => b.totalRaised - a.totalRaised).slice(0, 4);
-    const topSlugs = new Set(topRaisers.map((p) => p.slug));
+    const byRaised = [...available].sort((a, b) => b.totalRaised - a.totalRaised);
+    const topSlugs = new Set(byRaised.slice(0, 4).map((p) => p.slug));
     const recentSlugs = getRecentlyViewed().filter((s) => !topSlugs.has(s) && !excludeSlugs.includes(s));
     const bySlug = new Map(available.map((p) => [p.slug, p]));
     const recent = recentSlugs.map((s) => bySlug.get(s)).filter((p): p is PickerOption => Boolean(p));
-    return [...topRaisers, ...recent].slice(0, 6);
+    // Recently-viewed float to the top after the top 4 raisers, then
+    // everyone else remains reachable by scrolling instead of being cut
+    // off — this used to hard-truncate at 6 entries total.
+    const recentSet = new Set(recent.map((p) => p.slug));
+    const rest = byRaised.filter((p) => !topSlugs.has(p.slug) && !recentSet.has(p.slug));
+    return [...byRaised.slice(0, 4), ...recent, ...rest];
   }, [available, results, excludeSlugs]);
 
   if (!open) {
@@ -111,7 +116,7 @@ export default function EmptySlot({
       </div>
 
       {results !== null ? (
-        <div className="mt-2">
+        <div className="mt-2 max-h-[320px] overflow-y-auto">
           {results.length > 0 ? (
             results.map((r) => <ResultRow key={r.slug} option={r} onPick={onPick} />)
           ) : (
@@ -125,7 +130,7 @@ export default function EmptySlot({
             <div className="text-[12px] uppercase text-ink-quiet" style={{ letterSpacing: "0.14em" }}>
               Suggested
             </div>
-            <div className="mt-1">
+            <div className="mt-1 max-h-[320px] overflow-y-auto">
               {shortlist.map((s) => (
                 <ResultRow key={s.slug} option={s} onPick={onPick} />
               ))}
