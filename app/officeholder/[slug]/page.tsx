@@ -27,7 +27,7 @@ export default async function OfficeholderPage(props: PageProps<"/officeholder/[
         ← Roster
       </Link>
 
-      <div className="grid grid-cols-[1.6fr_1fr] items-end gap-[50px] border-b border-accent py-[20px] pb-[40px]">
+      <div className="grid grid-cols-1 sm:grid-cols-[1.6fr_1fr] items-end gap-[50px] border-b border-accent py-[20px] pb-[40px]">
         <div>
           <div className="text-eyebrow" style={{ color: PARTY_COLOR[politician.party] }}>
             {partyFullName(politician.party)} · {levelLabel(politician.level)}
@@ -37,7 +37,7 @@ export default async function OfficeholderPage(props: PageProps<"/officeholder/[
             {politician.office} · {politician.cycle} cycle
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
           <div>
             <div className="text-stat-secondary text-ink">{money(politician.totalRaised)}</div>
             <div className="text-eyebrow mt-2 text-ink-tertiary">Total raised</div>
@@ -51,7 +51,7 @@ export default async function OfficeholderPage(props: PageProps<"/officeholder/[
 
       <MoneySourceBand inStatePct={inStatePct} pacPct={pacPct} />
 
-      <div className="grid grid-cols-[1fr_1.35fr] gap-[56px] pt-9">
+      <div className="grid grid-cols-1 gap-9 pt-9 sm:grid-cols-[1fr_1.35fr] sm:gap-[56px]">
         <SectorList sectors={sectors} />
         <DonorList donors={topDonors} politicianSlug={politician.slug} />
       </div>

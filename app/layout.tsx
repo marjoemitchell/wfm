@@ -32,7 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${playfair.variable} ${archivo.variable}`}>
       <body className="min-h-screen flex flex-col bg-ground text-ink">
-        <div className="mx-auto w-full max-w-[1320px] px-10 flex-1 flex flex-col">
+        <div className="mx-auto w-full max-w-[1320px] px-4 sm:px-10 flex-1 flex flex-col">
           <Masthead />
           <Nav />
           <main className="flex-1">{children}</main>

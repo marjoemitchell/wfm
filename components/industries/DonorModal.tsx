@@ -64,11 +64,11 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 sm:p-6"
       onClick={onClose}
     >
       <div
-        className="max-h-[80vh] w-full max-w-[600px] overflow-y-auto bg-ground-panel p-8"
+        className="max-h-[85vh] w-full max-w-[600px] overflow-y-auto bg-ground-panel p-5 sm:p-8"
         style={{ border: "1px solid var(--color-border)" }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -155,18 +155,26 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
                   // same politician, so slug alone isn't a unique key here.
                   key={`${r.politician.slug}-${i}`}
                   href={`/officeholder/${r.politician.slug}`}
-                  // Every column is a fixed/relative unit (no `auto`) — each
-                  // row is its own independent grid, so an auto-sized amount
-                  // column would resize per-row based on that row's own
-                  // digit count, shifting the 1fr name column (and the
-                  // party badge after it) left/right row to row.
-                  className="grid grid-cols-[1fr_100px_100px] items-center gap-4 border-b border-rule-faint py-3 hover:bg-ground-raised"
+                  // On sm+ every column is a fixed/relative unit (no
+                  // `auto`) — each row is its own independent grid, so an
+                  // auto-sized amount column would resize per-row based on
+                  // that row's own digit count, shifting the 1fr name
+                  // column (and the party badge after it) left/right row
+                  // to row. On mobile there's no middle column to drift —
+                  // amount+date are one trailing auto block, always
+                  // right-anchored regardless of their own width.
+                  className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-rule-faint py-3 hover:bg-ground-raised sm:grid-cols-[1fr_100px_100px] sm:gap-4"
                 >
                   <div className="min-w-0">
                     <div className="truncate text-[16.5px] text-ink">{r.politician.name}</div>
                     <div className="truncate text-[13px] text-ink-tertiary">{r.politician.office}</div>
+                    <div className="mt-1 sm:hidden">
+                      <PartyChip party={r.politician.party} bordered={false} />
+                    </div>
                   </div>
-                  <PartyChip party={r.politician.party} bordered={false} />
+                  <div className="hidden sm:block">
+                    <PartyChip party={r.politician.party} bordered={false} />
+                  </div>
                   <div className="text-right">
                     <div className="text-[16px] tabular-nums text-ink">{money(r.amount)}</div>
                     <div className="text-[12px] text-ink-tertiary">{formatDate(r.date)}</div>

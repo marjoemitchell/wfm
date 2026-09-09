@@ -11,7 +11,7 @@ export default async function MapPage() {
 
   return (
     <div>
-      <div className="grid grid-cols-[1.4fr_1fr] items-end gap-[50px] border-b border-accent pt-[38px] pb-[26px]">
+      <div className="grid grid-cols-1 sm:grid-cols-[1.4fr_1fr] items-end gap-[50px] border-b border-accent pt-[38px] pb-[26px]">
         <div>
           <h1 className="text-page-headline text-ink">Where the donors are</h1>
           <p className="text-body-copy mt-3 max-w-[520px] text-ink-secondary">
@@ -27,7 +27,7 @@ export default async function MapPage() {
 
       <SplitBar inStateTotal={inStateTotal} outOfStateTotal={outOfStateTotal} inStatePct={inStatePct} />
 
-      <div className="grid grid-cols-[1.8fr_1fr] gap-[46px] pt-[30px]">
+      <div className="grid grid-cols-1 gap-9 pt-[30px] sm:grid-cols-[1.8fr_1fr] sm:gap-[46px]">
         <div>
           <div className="border-b border-rule pb-3 text-eyebrow text-ink-quiet">Contributions by state</div>
           <div className="pt-6">
@@ -41,7 +41,7 @@ export default async function MapPage() {
         />
       </div>
 
-      <div className="grid grid-cols-[1.8fr_1fr] gap-[46px] pt-[46px]">
+      <div className="grid grid-cols-1 gap-9 pt-[46px] sm:grid-cols-[1.8fr_1fr] sm:gap-[46px]">
         <div>
           <div className="border-b border-rule pb-3 text-eyebrow text-ink-quiet">Inside Montana</div>
           <div className="pt-6">

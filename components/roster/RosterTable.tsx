@@ -45,18 +45,27 @@ export default function RosterTable({ rows }: { rows: RosterRowData[] }) {
         return (
           <div
             key={row.slug}
-            className="grid grid-cols-[30px_2.3fr_1.4fr_1.5fr_1fr_40px] items-center gap-[22px] border-b border-rule-faint py-5 hover:bg-ground-raised"
+            className="grid grid-cols-[24px_1fr_auto_32px] items-start gap-3 border-b border-rule-faint py-5 hover:bg-ground-raised sm:grid-cols-[30px_2.3fr_1.4fr_1.5fr_1fr_40px] sm:items-center sm:gap-[22px]"
           >
             <span className="text-[13px] text-ink-quiet">{rank(i)}</span>
-            <Link href={`/officeholder/${row.slug}`}>
-              <div className="text-roster-name text-ink">{row.name}</div>
-              <div className="text-[13.5px] text-ink-tertiary">{row.office}</div>
-            </Link>
-            <div>
+            <div className="min-w-0">
+              <Link href={`/officeholder/${row.slug}`}>
+                <div className="text-roster-name text-ink">{row.name}</div>
+                <div className="text-[13.5px] text-ink-tertiary">{row.office}</div>
+              </Link>
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 sm:hidden">
+                <PartyChip party={row.party} />
+                <span className="text-[13.5px] text-ink-tertiary">{row.topSector}</span>
+                <span className="text-[12.5px] uppercase text-ink-quiet" style={{ letterSpacing: "0.1em" }}>
+                  In-state {percent(row.inStatePct)}
+                </span>
+              </div>
+            </div>
+            <div className="hidden sm:block">
               <PartyChip party={row.party} />
               <div className="mt-2 text-[13.5px] text-ink-tertiary">{row.topSector}</div>
             </div>
-            <div>
+            <div className="hidden sm:block">
               <div className="h-[2px] w-full bg-track">
                 <div className="h-[2px] bg-accent" style={{ width: `${Math.min(100, row.inStatePct)}%` }} />
               </div>
@@ -70,7 +79,7 @@ export default function RosterTable({ rows }: { rows: RosterRowData[] }) {
               onClick={() => toggle(row.slug)}
               aria-pressed={checked}
               aria-label={`Add ${row.name} to compare`}
-              className="h-[26px] w-[26px] border"
+              className="h-[26px] w-[26px] shrink-0 border"
               style={{
                 borderColor: checked ? "var(--color-accent)" : "var(--color-border)",
                 background: checked ? "var(--color-accent)" : "transparent",

@@ -17,12 +17,12 @@ export default async function IndustryPage(props: PageProps<"/industry/[slug]">)
         ← Industries
       </Link>
 
-      <div className="grid grid-cols-[1.6fr_1fr] items-end gap-[50px] border-b border-accent py-[20px] pb-[40px]">
+      <div className="grid grid-cols-1 sm:grid-cols-[1.6fr_1fr] items-end gap-[50px] border-b border-accent py-[20px] pb-[40px]">
         <div>
           <div className="text-eyebrow text-accent">Industry</div>
           <h1 className="text-donor-page-name mt-2 text-ink">{sector}</h1>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
           <div>
             <div className="text-stat-secondary text-ink">{money(total)}</div>
             <div className="text-eyebrow mt-2 text-ink-tertiary">Total tracked</div>

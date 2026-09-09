@@ -7,7 +7,7 @@ export default async function IndustriesPage() {
 
   return (
     <div>
-      <div className="grid grid-cols-[1.4fr_1fr] items-end gap-[50px] border-b border-accent pt-[38px] pb-[26px]">
+      <div className="grid grid-cols-1 sm:grid-cols-[1.4fr_1fr] items-end gap-[50px] border-b border-accent pt-[38px] pb-[26px]">
         <div>
           <h1 className="text-page-headline text-ink">Money by industry</h1>
           <p className="text-body-copy mt-3 max-w-[520px] text-ink-secondary">

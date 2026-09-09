@@ -18,7 +18,7 @@ export default function SectorDonorList({ donors }: { donors: SectorDonor[] }) {
 
   return (
     <div>
-      <div className="flex items-baseline justify-between border-b border-rule pb-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 border-b border-rule pb-3">
         <span className="text-eyebrow text-ink-quiet">Largest donors</span>
         <span className="text-[13.5px] text-ink-faint">Click a donor for details</span>
       </div>
@@ -27,13 +27,16 @@ export default function SectorDonorList({ donors }: { donors: SectorDonor[] }) {
           key={d.slug}
           type="button"
           onClick={() => setSelected(d.slug)}
-          className="grid w-full grid-cols-[1.7fr_1fr_0.8fr] items-center gap-4 py-4 text-left hover:bg-ground-raised"
+          className="grid w-full grid-cols-[1fr_auto] items-center gap-4 py-4 text-left hover:bg-ground-raised sm:grid-cols-[1.7fr_1fr_0.8fr]"
         >
-          <div>
+          <div className="min-w-0">
             <div className="text-donor-row-name text-ink">{d.name}</div>
-            {d.employer && <div className="text-[13.5px] text-ink-tertiary">{d.employer}</div>}
+            {d.employer && <div className="truncate text-[13.5px] text-ink-tertiary">{d.employer}</div>}
+            <div className="text-[13.5px] text-ink-tertiary sm:hidden">
+              {d.city}, {d.state}
+            </div>
           </div>
-          <div className="text-[14px] text-ink-secondary">
+          <div className="hidden text-[14px] text-ink-secondary sm:block">
             {d.city}, {d.state}
           </div>
           <div className="text-right text-[16.5px] tabular-nums text-ink">{money(d.amount)}</div>

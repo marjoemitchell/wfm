@@ -14,14 +14,17 @@ export default function Nav() {
   const pathname = usePathname();
 
   return (
-    <nav className="sticky top-0 z-10 flex gap-[30px] border-b border-rule bg-ground">
+    <nav
+      className="sticky top-0 z-10 flex gap-[30px] overflow-x-auto border-b border-rule bg-ground"
+      style={{ scrollbarWidth: "none" }}
+    >
       {TABS.map((tab) => {
         const active = tab.match(pathname);
         return (
           <Link
             key={tab.href}
             href={tab.href}
-            className={`text-nav-tab py-[15px] ${
+            className={`text-nav-tab shrink-0 whitespace-nowrap py-[15px] ${
               active
                 ? "text-ink shadow-[inset_0_-1px_0_0_var(--color-accent)]"
                 : "text-ink-quiet"
