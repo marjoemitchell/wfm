@@ -1,17 +1,28 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getDonorBySlug } from "@/lib/queries";
+import { getDonorBySlug, getPoliticianNameBySlug } from "@/lib/queries";
 import { money } from "@/lib/format";
 import RecipientList from "@/components/donor/RecipientList";
 
 export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
   const { slug } = await props.params;
-  const data = await getDonorBySlug(slug);
+  const searchParams = await props.searchParams;
+  const fromSlug = typeof searchParams.from === "string" ? searchParams.from : null;
+
+  const [data, from] = await Promise.all([
+    getDonorBySlug(slug),
+    fromSlug ? getPoliticianNameBySlug(fromSlug) : Promise.resolve(null),
+  ]);
   if (!data) notFound();
 
   const { donor, rows, totalGiven, recipients } = data;
 
   return (
     <div>
+      <Link href={from ? `/officeholder/${from.slug}` : "/"} className="text-eyebrow inline-block pt-[22px] text-accent">
+        ← {from ? from.name : "Officeholders"}
+      </Link>
+
       <div className="grid grid-cols-[1.6fr_1fr] items-end gap-[50px] border-b border-accent py-[20px] pb-[40px]">
         <div>
           <div className="text-eyebrow text-accent">Donor · {donor.sector}</div>

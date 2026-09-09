@@ -10,7 +10,7 @@ export type TopDonor = {
   amount: number;
 };
 
-export default function DonorList({ donors }: { donors: TopDonor[] }) {
+export default function DonorList({ donors, politicianSlug }: { donors: TopDonor[]; politicianSlug: string }) {
   return (
     <div>
       <div className="flex items-baseline justify-between border-b border-rule pb-3">
@@ -20,7 +20,7 @@ export default function DonorList({ donors }: { donors: TopDonor[] }) {
       {donors.map((d) => (
         <Link
           key={d.slug}
-          href={`/donor/${d.slug}`}
+          href={`/donor/${d.slug}?from=${politicianSlug}`}
           className="grid grid-cols-[1.7fr_1fr_0.8fr] items-center gap-4 py-4 hover:bg-ground-raised"
         >
           <div>

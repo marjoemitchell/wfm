@@ -163,6 +163,10 @@ export async function getPoliticianBySlug(slug: string) {
   };
 }
 
+export async function getPoliticianNameBySlug(slug: string) {
+  return db.politician.findUnique({ where: { slug }, select: { slug: true, name: true } });
+}
+
 export async function getDonorBySlug(slug: string) {
   const donor = await db.donor.findUnique({ where: { slug } });
   if (!donor) return null;
