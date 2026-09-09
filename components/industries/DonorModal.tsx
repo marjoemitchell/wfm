@@ -138,14 +138,14 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
                   // same politician, so slug alone isn't a unique key here.
                   key={`${r.politician.slug}-${i}`}
                   href={`/officeholder/${r.politician.slug}`}
-                  className="flex items-center justify-between gap-4 border-b border-rule-faint py-3 hover:bg-ground-raised"
+                  className="grid grid-cols-[1fr_100px_auto] items-center gap-4 border-b border-rule-faint py-3 hover:bg-ground-raised"
                 >
                   <div className="min-w-0">
                     <div className="truncate text-[16.5px] text-ink">{r.politician.name}</div>
                     <div className="truncate text-[13px] text-ink-tertiary">{r.politician.office}</div>
                   </div>
                   <PartyChip party={r.politician.party} bordered={false} />
-                  <div className="shrink-0 text-[16px] tabular-nums text-ink">{money(r.amount)}</div>
+                  <div className="shrink-0 text-right text-[16px] tabular-nums text-ink">{money(r.amount)}</div>
                 </Link>
               ))}
             </div>
