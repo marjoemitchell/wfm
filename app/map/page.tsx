@@ -43,9 +43,7 @@ export default async function MapPage() {
 
       <div className="grid grid-cols-[1.8fr_1fr] gap-[46px] pt-[46px]">
         <div>
-          <div className="border-b border-rule pb-3 text-eyebrow text-ink-quiet">
-            Inside Montana — circle area is total from that city
-          </div>
+          <div className="border-b border-rule pb-3 text-eyebrow text-ink-quiet">Inside Montana</div>
           <div className="pt-6">
             <MontanaMap cities={montanaCities} />
           </div>

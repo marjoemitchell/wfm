@@ -1,10 +1,16 @@
 import { getMontanaPathD, MAP_VIEWBOX, projectLonLat } from "@/lib/montana-geo";
 import { layoutCityLabels, bubbleRadius } from "@/lib/map-layout";
-import { money } from "@/lib/format";
 import cityCoords from "@/data/mt-city-coords.json";
+import MontanaMapView from "@/components/map/MontanaMapView";
 
 const COORDS = cityCoords as unknown as Record<string, [number, number]>;
 
+// Geometry (the d3 conic projection, sqrt-based bubble radii) is computed
+// here, server-side, once. It used to be recomputed client-side too after
+// this became interactive, which produced last-bit floating-point
+// differences between Node's and the browser's V8 for the same trig calls
+// — a real hydration mismatch, not just a lint nag. Passing the already-
+// computed numbers down as props avoids the client ever touching the math.
 export default function MontanaMap({ cities, maxLabels = 6 }: { cities: { city: string; amount: number }[]; maxLabels?: number }) {
   const pathD = getMontanaPathD();
   const maxAmount = cities.reduce((m, c) => Math.max(m, c.amount), 0);
@@ -28,62 +34,12 @@ export default function MontanaMap({ cities, maxLabels = 6 }: { cities: { city: 
 
   // Only the largest few cities get a text label — labeling every city
   // this map might have data for is what caused labels to collide and
-  // drift off the bottom of the page previously.
+  // drift off the bottom of the page previously. The rest are reachable
+  // by hover/tap instead.
   const topCities = new Set([...allBubbles].sort((a, b) => b.amount - a.amount).slice(0, maxLabels).map((b) => b.city));
   const bubbles = allBubbles.filter((b) => topCities.has(b.city));
   const unlabeledBubbles = allBubbles.filter((b) => !topCities.has(b.city));
-
   const labeled = layoutCityLabels(bubbles, MAP_VIEWBOX.height);
 
-  return (
-    <div className="relative w-full">
-      <svg viewBox={`0 0 ${MAP_VIEWBOX.width} ${MAP_VIEWBOX.height}`} width="100%">
-        <path d={pathD} fill="var(--color-ground-panel)" stroke="var(--color-border)" strokeWidth={1} />
-        {unlabeledBubbles.map((b) => (
-          <circle
-            key={b.city}
-            cx={b.x}
-            cy={b.y}
-            r={b.radius}
-            fill="var(--color-accent)"
-            fillOpacity={0.18}
-            stroke="var(--color-accent)"
-            strokeWidth={1}
-          />
-        ))}
-        {labeled.map((b) => (
-          <g key={b.city}>
-            {b.labelY !== b.y && (
-              <line
-                x1={b.x}
-                y1={b.y}
-                x2={b.x}
-                y2={b.labelY}
-                stroke="var(--color-lead-line)"
-                strokeWidth={0.75}
-              />
-            )}
-            <circle cx={b.x} cy={b.y} r={b.radius} fill="var(--color-accent)" fillOpacity={0.18} stroke="var(--color-accent)" strokeWidth={1} />
-            <circle cx={b.x} cy={b.y} r={2} fill="var(--color-accent)" />
-          </g>
-        ))}
-      </svg>
-      <div className="pointer-events-none absolute inset-0">
-        {labeled.map((b) => (
-          <div
-            key={b.city}
-            className="absolute whitespace-nowrap"
-            style={{
-              left: `${(b.x / MAP_VIEWBOX.width) * 100}%`,
-              top: `${(b.labelY / MAP_VIEWBOX.height) * 100}%`,
-              transform: "translateY(-50%)",
-            }}
-          >
-            <div className="text-[13px] text-ink">{b.city}</div>
-            <div className="text-[12.5px] tabular-nums text-ink-secondary">{money(b.amount)}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  return <MontanaMapView pathD={pathD} labeled={labeled} unlabeledBubbles={unlabeledBubbles} />;
 }
