@@ -166,6 +166,40 @@ export async function getPoliticianBySlug(slug: string) {
   };
 }
 
+export async function getPoliticianSectorDonors(politicianSlug: string, sector: string) {
+  const politician = await db.politician.findUnique({ where: { slug: politicianSlug }, select: { id: true, name: true } });
+  if (!politician) return null;
+
+  const contributions = await db.contribution.findMany({
+    where: { politicianId: politician.id, donor: { sector } },
+    select: {
+      amount: true,
+      donor: { select: { id: true, slug: true, name: true, employer: true, city: true, state: true } },
+    },
+  });
+
+  const byDonor = new Map<string, { slug: string; name: string; employer: string | null; city: string; state: string; amount: number }>();
+  for (const c of contributions) {
+    const amt = toNumber(c.amount);
+    const existing = byDonor.get(c.donor.id);
+    if (existing) existing.amount += amt;
+    else
+      byDonor.set(c.donor.id, {
+        slug: c.donor.slug,
+        name: c.donor.name,
+        employer: c.donor.employer,
+        city: c.donor.city,
+        state: c.donor.state,
+        amount: amt,
+      });
+  }
+
+  const donors = [...byDonor.values()].sort((a, b) => b.amount - a.amount);
+  const total = donors.reduce((sum, d) => sum + d.amount, 0);
+
+  return { politicianName: politician.name, sector, total, donorCount: donors.length, donors };
+}
+
 export async function getPoliticianNameBySlug(slug: string) {
   return db.politician.findUnique({ where: { slug }, select: { slug: true, name: true } });
 }

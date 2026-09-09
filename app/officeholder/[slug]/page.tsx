@@ -52,7 +52,7 @@ export default async function OfficeholderPage(props: PageProps<"/officeholder/[
       <MoneySourceBand inStatePct={inStatePct} pacPct={pacPct} />
 
       <div className="grid grid-cols-1 gap-9 pt-9 sm:grid-cols-[1fr_1.35fr] sm:gap-[56px]">
-        <SectorList sectors={sectors} />
+        <SectorList sectors={sectors} politicianSlug={politician.slug} />
         <DonorList donors={topDonors} politicianSlug={politician.slug} />
       </div>
     </div>
