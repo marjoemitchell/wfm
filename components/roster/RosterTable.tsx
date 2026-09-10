@@ -44,25 +44,39 @@ export default function RosterTable({ rows }: { rows: RosterRowData[] }) {
     return <div className="py-[70px] text-center text-[15px] text-ink-quiet">Nothing matches that search.</div>;
   }
 
+  const displayRows = rows.map((row) => ({
+    row,
+    displayTotal: showOutside ? row.totalRaised + row.outsideSupport : row.totalRaised,
+  }));
+  if (showOutside) {
+    displayRows.sort((a, b) => b.displayTotal - a.displayTotal);
+  }
+
   return (
     <div>
       {hasAnyOutsideSpending && (
         <div className="flex justify-end border-b border-rule-faint py-3">
-          <label htmlFor={checkboxId} className="flex cursor-pointer items-center gap-2 text-[12.5px] text-ink-quiet">
-            <input
-              id={checkboxId}
-              type="checkbox"
-              checked={showOutside}
-              onChange={(e) => setShowOutside(e.target.checked)}
-              className="h-[14px] w-[14px] accent-[var(--color-accent)]"
-            />
-            Include outside spending
-          </label>
+          <div className="group relative">
+            <label htmlFor={checkboxId} className="flex cursor-pointer items-center gap-2 text-[12.5px] text-ink-quiet">
+              <input
+                id={checkboxId}
+                type="checkbox"
+                checked={showOutside}
+                onChange={(e) => setShowOutside(e.target.checked)}
+                className="h-[14px] w-[14px] accent-[var(--color-accent)]"
+              />
+              Include outside spending
+            </label>
+            <div className="pointer-events-none invisible absolute right-0 top-full z-10 mt-2 w-[260px] rounded border border-rule bg-ground-panel p-3 text-[12px] leading-relaxed text-ink-secondary opacity-0 shadow-lg transition-opacity group-hover:visible group-hover:opacity-100">
+              Money spent independently by Super PACs and similar committees to help a candidate. Paid to vendors,
+              never given to the campaign directly, so it is left out of Total raised by default. Turning this on
+              also re-ranks the roster by the combined amount.
+            </div>
+          </div>
         </div>
       )}
-      {rows.map((row, i) => {
+      {displayRows.map(({ row, displayTotal }, i) => {
         const checked = compare.includes(row.slug);
-        const displayTotal = showOutside ? row.totalRaised + row.outsideSupport : row.totalRaised;
         return (
           <div
             key={row.slug}
