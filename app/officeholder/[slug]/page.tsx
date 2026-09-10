@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPoliticianBySlug } from "@/lib/queries";
-import { partyFullName, levelLabel } from "@/lib/format";
+import { money, partyFullName, levelLabel } from "@/lib/format";
 import MoneySourceBand from "@/components/politician/MoneySourceBand";
 import SectorList from "@/components/politician/SectorList";
 import DonorList from "@/components/politician/DonorList";
-import TotalRaisedStat from "@/components/politician/TotalRaisedStat";
 import RecordView from "@/components/officeholder/RecordView";
 
 const PARTY_COLOR: Record<string, string> = {
@@ -38,13 +37,27 @@ export default async function OfficeholderPage(props: PageProps<"/officeholder/[
             {politician.office} · {politician.cycle} cycle
           </p>
         </div>
-        <TotalRaisedStat totalRaised={politician.totalRaised} cashOnHand={politician.cashOnHand} outsideSpending={outsideSpending} />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
+          <div>
+            <div className="text-stat-secondary text-ink">{money(politician.totalRaised)}</div>
+            <div className="text-eyebrow mt-2 text-ink-tertiary">Total raised</div>
+          </div>
+          <div>
+            <div className="text-stat-secondary text-ink">{money(politician.cashOnHand)}</div>
+            <div className="text-eyebrow mt-2 text-ink-tertiary">Cash on hand</div>
+          </div>
+        </div>
       </div>
 
       <MoneySourceBand inStatePct={inStatePct} pacPct={pacPct} />
 
       <div className="grid grid-cols-1 gap-9 pt-9 sm:grid-cols-[1fr_1.35fr] sm:gap-[56px]">
-        <SectorList sectors={sectors} politicianSlug={politician.slug} />
+        <SectorList
+          sectors={sectors}
+          politicianSlug={politician.slug}
+          politicianName={politician.name}
+          outsideSpending={outsideSpending}
+        />
         <DonorList donors={topDonors} politicianSlug={politician.slug} />
       </div>
     </div>
