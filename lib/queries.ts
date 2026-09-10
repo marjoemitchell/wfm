@@ -362,6 +362,52 @@ export async function getIndustries() {
   return { rows, trackedTotal };
 }
 
+export async function getOutsideSpenders() {
+  const expenditures = await db.independentExpenditure.findMany({
+    select: {
+      amount: true,
+      donor: { select: { id: true, slug: true, name: true } },
+      politician: { select: { slug: true, name: true } },
+    },
+  });
+
+  const byDonor = new Map<
+    string,
+    { slug: string; name: string; total: number; candidateSlugs: Set<string>; byCandidate: Map<string, { name: string; slug: string; amount: number }> }
+  >();
+  for (const ie of expenditures) {
+    const amt = toNumber(ie.amount);
+    const key = ie.donor.id;
+    if (!byDonor.has(key)) {
+      byDonor.set(key, { slug: ie.donor.slug, name: ie.donor.name, total: 0, candidateSlugs: new Set(), byCandidate: new Map() });
+    }
+    const bucket = byDonor.get(key)!;
+    bucket.total += amt;
+    bucket.candidateSlugs.add(ie.politician.slug);
+    const existing = bucket.byCandidate.get(ie.politician.slug);
+    if (existing) existing.amount += amt;
+    else bucket.byCandidate.set(ie.politician.slug, { name: ie.politician.name, slug: ie.politician.slug, amount: amt });
+  }
+
+  const trackedTotal = [...byDonor.values()].reduce((sum, b) => sum + b.total, 0);
+
+  const rows = [...byDonor.values()]
+    .map((bucket) => {
+      const topCandidate = [...bucket.byCandidate.values()].sort((a, b) => b.amount - a.amount)[0];
+      return {
+        slug: bucket.slug,
+        name: bucket.name,
+        total: bucket.total,
+        share: trackedTotal > 0 ? (bucket.total / trackedTotal) * 100 : 0,
+        candidateCount: bucket.candidateSlugs.size,
+        topCandidate: topCandidate ? { name: topCandidate.name, slug: topCandidate.slug } : null,
+      };
+    })
+    .sort((a, b) => b.total - a.total);
+
+  return { rows, trackedTotal };
+}
+
 export async function getSectorBySlug(slug: string) {
   // Sector is a plain string on Donor, not its own model with a stored
   // slug — match by slugifying each distinct value rather than a WHERE.
