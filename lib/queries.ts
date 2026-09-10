@@ -164,12 +164,47 @@ export async function getPoliticianBySlug(slug: string) {
 
   const topDonors = [...byDonor.values()].sort((a, b) => b.amount - a.amount).slice(0, 12);
 
+  // Independent expenditures (Super PAC spending) are never given to this
+  // politician — they're a legally separate category (money a PAC spends
+  // on its own, without coordinating with the campaign) — so they're kept
+  // entirely out of itemizedTotal/pacPct/sectors/topDonors above, which
+  // are all about money the campaign itself received.
+  const independentExpenditures = await db.independentExpenditure.findMany({
+    where: { politicianId: politician.id },
+    select: { amount: true, support: true, donor: { select: { id: true, slug: true, name: true, city: true, state: true } } },
+  });
+
+  let supportTotal = 0;
+  let opposeTotal = 0;
+  const bySpender = new Map<string, { slug: string; name: string; city: string; state: string; support: number; oppose: number }>();
+  for (const ie of independentExpenditures) {
+    const amt = toNumber(ie.amount);
+    if (ie.support) supportTotal += amt;
+    else opposeTotal += amt;
+    const existing = bySpender.get(ie.donor.id);
+    if (existing) {
+      if (ie.support) existing.support += amt;
+      else existing.oppose += amt;
+    } else {
+      bySpender.set(ie.donor.id, {
+        slug: ie.donor.slug,
+        name: ie.donor.name,
+        city: ie.donor.city,
+        state: ie.donor.state,
+        support: ie.support ? amt : 0,
+        oppose: ie.support ? 0 : amt,
+      });
+    }
+  }
+  const outsideSpenders = [...bySpender.values()].sort((a, b) => b.support + b.oppose - (a.support + a.oppose));
+
   return {
     politician: { ...politician, totalRaised: toNumber(politician.totalRaised), cashOnHand: toNumber(politician.cashOnHand) },
     inStatePct: itemizedTotal > 0 ? (inState / itemizedTotal) * 100 : 0,
     pacPct: itemizedTotal > 0 ? (pacAmount / itemizedTotal) * 100 : 0,
     sectors,
     topDonors,
+    outsideSpending: { supportTotal, opposeTotal, spenders: outsideSpenders },
   };
 }
 
@@ -234,7 +269,33 @@ export async function getDonorBySlug(slug: string) {
   const totalGiven = rows.reduce((sum, r) => sum + r.amount, 0);
   const recipients = new Set(rows.map((r) => r.politician.slug)).size;
 
-  return { donor, rows, totalGiven, recipients };
+  // A pure independent-expenditure spender (a Super PAC with no direct
+  // contributions at all) would otherwise render this page as empty —
+  // "who they fund" is about contributions, which by law a Super PAC
+  // can't make, so their support/opposition shows up here instead.
+  const independentExpenditures = await db.independentExpenditure.findMany({
+    where: { donorId: donor.id },
+    select: {
+      amount: true,
+      date: true,
+      support: true,
+      description: true,
+      payee: true,
+      politician: { select: { slug: true, name: true, office: true, party: true } },
+    },
+    orderBy: { amount: "desc" },
+  });
+  const ieRows = independentExpenditures.map((ie) => ({
+    politician: ie.politician,
+    amount: toNumber(ie.amount),
+    date: ie.date,
+    support: ie.support,
+    description: ie.description,
+    payee: ie.payee,
+  }));
+  const ieTotal = ieRows.reduce((sum, r) => sum + r.amount, 0);
+
+  return { donor, rows, totalGiven, recipients, independentExpenditures: { total: ieTotal, rows: ieRows } };
 }
 
 export async function getIndustries() {

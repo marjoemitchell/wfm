@@ -22,6 +22,16 @@ type DonorDetail = {
   totalGiven: number;
   recipients: number;
   rows: { politician: { slug: string; name: string; office: string; party: Party }; amount: number; date: string }[];
+  independentExpenditures: {
+    total: number;
+    rows: {
+      politician: { slug: string; name: string; office: string; party: Party };
+      amount: number;
+      date: string;
+      support: boolean;
+      description: string | null;
+    }[];
+  };
 };
 
 export default function DonorModal({ slug, onClose }: { slug: string | null; onClose: () => void }) {
@@ -147,6 +157,32 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
               </div>
             )}
 
+            {data.independentExpenditures.rows.length > 0 && (
+              <div className="mt-5">
+                <div className="text-eyebrow border-b border-rule pb-2 text-ink-quiet">Independent expenditures</div>
+                <p className="mt-2 text-[12px] text-ink-faint">
+                  Spent supporting or opposing these candidates — paid to vendors, never given to their campaigns
+                  directly.
+                </p>
+                {data.independentExpenditures.rows.map((r, i) => (
+                  <Link
+                    key={`${r.politician.slug}-${i}`}
+                    href={`/officeholder/${r.politician.slug}`}
+                    className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-rule-faint py-3 hover:bg-ground-raised"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate text-[15.5px] text-ink">{r.politician.name}</div>
+                      <div className="truncate text-[12px] text-ink-tertiary">
+                        {r.support ? "Supporting" : "Opposing"} · {formatDate(r.date)}
+                      </div>
+                    </div>
+                    <div className="text-right text-[15px] tabular-nums text-ink">{money(r.amount)}</div>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {data.rows.length > 0 && (
             <div className="mt-5">
               <div className="text-eyebrow border-b border-rule pb-2 text-ink-quiet">Who they fund</div>
               {data.rows.map((r, i) => (
@@ -182,6 +218,7 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
                 </Link>
               ))}
             </div>
+            )}
           </>
         )}
       </div>

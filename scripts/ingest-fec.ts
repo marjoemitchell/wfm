@@ -22,6 +22,7 @@ const API_KEY = process.env.FEC_API_KEY ?? "DEMO_KEY";
 const CYCLE = Number(process.env.FEC_CYCLE ?? "2026");
 const BASE = "https://api.open.fec.gov/v1";
 const MAX_CONTRIBUTIONS_PER_COMMITTEE = 5000; // safety cap against runaway pagination on a single committee
+const MAX_INDEPENDENT_EXPENDITURES = 1000; // safety cap, same reasoning
 
 async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -265,6 +266,117 @@ async function upsertDonor(record: FecScheduleARecord, isPac: boolean): Promise<
   return donor.id;
 }
 
+// The spender on a Schedule E record is always a committee (never an
+// individual) and always comes with its own FEC id already resolved, so
+// this is simpler than upsertDonor — no entity_type branching needed.
+async function upsertSpenderDonor(committeeId: string, name: string, city: string | null, state: string | null): Promise<string | null> {
+  const cleanName = name?.trim();
+  if (!cleanName) return null;
+  const cityVal = city?.trim() || "Unknown";
+  const stateVal = state?.trim() || "??";
+
+  const key = donorKey(cleanName, null, cityVal, stateVal);
+  const cached = donorIdCache.get(key);
+  if (cached) return cached;
+
+  const existing = await db.donor.findUnique({ where: { slug: key }, select: { id: true, committeeDesignation: true } });
+  const meta = !existing || !existing.committeeDesignation ? await fetchCommitteeMetadata(committeeId) : null;
+
+  if (existing) {
+    if (meta) await db.donor.update({ where: { id: existing.id }, data: meta });
+    donorIdCache.set(key, existing.id);
+    return existing.id;
+  }
+
+  const donor = await db.donor.create({
+    data: {
+      slug: key,
+      name: cleanName,
+      city: cityVal,
+      state: stateVal,
+      sector: "Political Committees",
+      fecCommitteeId: committeeId,
+      ...meta,
+    },
+  });
+  donorIdCache.set(key, donor.id);
+  return donor.id;
+}
+
+type FecIndependentExpenditure = {
+  support_oppose_indicator: string | null;
+  expenditure_amount: number | null;
+  expenditure_date: string | null;
+  expenditure_description: string | null;
+  payee_name: string | null;
+  committee_id: string;
+  committee: { name: string | null; city: string | null; state: string | null } | null;
+};
+
+// FEC requires a 48-hour advance notice (Form 24, is_notice=true) for
+// large independent expenditures close to an election, and the *same*
+// dollar amount then gets restated in the committee's regular periodic
+// report (Form 3X, is_notice=false) — both show up on Schedule E as
+// separate records with different file/transaction ids. Verified live
+// against a real race: naively summing all records overstated total
+// spending by roughly 2x. Deduplicating on the actual transaction's own
+// facts (who spent it, on what date, how much, on what, paid to whom,
+// for/against) collapses each notice+restatement pair into one, while
+// still keeping genuinely distinct expenditures separate.
+async function fetchIndependentExpenditures(candidateId: string): Promise<
+  { donorId: string; amount: number; date: Date; support: boolean; description: string | null; payee: string | null }[]
+> {
+  const seen = new Set<string>();
+  const rows: { donorId: string; amount: number; date: Date; support: boolean; description: string | null; payee: string | null }[] = [];
+  let lastIndexes: { last_index?: string; last_expenditure_date?: string } = {};
+
+  while (rows.length < MAX_INDEPENDENT_EXPENDITURES) {
+    const page = await fecGet<{ results: FecIndependentExpenditure[]; pagination: { last_indexes: typeof lastIndexes } }>(
+      "/schedules/schedule_e/",
+      {
+        candidate_id: candidateId,
+        min_date: `${CYCLE - 1}-01-01`,
+        max_date: `${CYCLE}-12-31`,
+        per_page: 100,
+        sort: "expenditure_date",
+        ...(lastIndexes.last_index ? { last_index: lastIndexes.last_index } : {}),
+        ...(lastIndexes.last_expenditure_date ? { last_expenditure_date: lastIndexes.last_expenditure_date } : {}),
+      }
+    );
+    if (page.results.length === 0) break;
+
+    for (const r of page.results) {
+      if (!r.committee || !r.expenditure_amount || !r.expenditure_date) continue;
+      const dedupeKey = [
+        r.committee_id,
+        r.expenditure_date,
+        r.expenditure_amount,
+        r.payee_name,
+        r.expenditure_description,
+        r.support_oppose_indicator,
+      ].join("|");
+      if (seen.has(dedupeKey)) continue;
+      seen.add(dedupeKey);
+
+      const donorId = await upsertSpenderDonor(r.committee_id, r.committee.name ?? r.committee_id, r.committee.city, r.committee.state);
+      if (!donorId) continue;
+      rows.push({
+        donorId,
+        amount: r.expenditure_amount,
+        date: new Date(r.expenditure_date),
+        support: r.support_oppose_indicator === "S",
+        description: r.expenditure_description,
+        payee: r.payee_name,
+      });
+    }
+
+    lastIndexes = page.pagination.last_indexes ?? {};
+    if (!lastIndexes.last_index) break;
+  }
+
+  return rows;
+}
+
 async function ingestCandidate(candidate: FecCandidate) {
   console.log(`\n${candidate.name} (${candidate.candidate_id})`);
 
@@ -401,6 +513,23 @@ async function ingestCandidate(candidate: FecCandidate) {
   }
 
   console.log(`  ingested ${allRows.length} itemized contributions`);
+
+  // Independent expenditures (Super PAC spending) are a separate legal
+  // category from contributions entirely — best-effort and isolated from
+  // the contribution data above, which has already been committed by
+  // this point. A failure here should never re-trigger (via the outer
+  // per-candidate retry loop) a redo of the expensive contribution fetch
+  // that just succeeded.
+  try {
+    const ieRows = await fetchIndependentExpenditures(candidate.candidate_id);
+    await db.independentExpenditure.deleteMany({ where: { politicianId: politician.id } });
+    if (ieRows.length > 0) {
+      await db.independentExpenditure.createMany({ data: ieRows.map((r) => ({ ...r, politicianId: politician.id })) });
+    }
+    console.log(`  ingested ${ieRows.length} independent expenditures`);
+  } catch (err) {
+    console.warn(`  independent expenditure fetch failed for ${candidate.name}:`, err instanceof Error ? err.message : err);
+  }
 }
 
 // Fixed arbitrary key for this script's advisory lock. Prevents two

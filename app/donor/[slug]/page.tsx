@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getDonorBySlug, getPoliticianNameBySlug } from "@/lib/queries";
 import { money } from "@/lib/format";
 import RecipientList from "@/components/donor/RecipientList";
+import IndependentExpenditureList from "@/components/donor/IndependentExpenditureList";
 
 export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
   const { slug } = await props.params;
@@ -15,7 +16,7 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
   ]);
   if (!data) notFound();
 
-  const { donor, rows, totalGiven, recipients } = data;
+  const { donor, rows, totalGiven, recipients, independentExpenditures } = data;
 
   return (
     <div>
@@ -84,9 +85,17 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
         </div>
       )}
 
-      <div className="pt-9">
-        <RecipientList rows={rows} />
-      </div>
+      {independentExpenditures.rows.length > 0 && (
+        <div className="pt-9">
+          <IndependentExpenditureList rows={independentExpenditures.rows} />
+        </div>
+      )}
+
+      {rows.length > 0 && (
+        <div className="pt-9">
+          <RecipientList rows={rows} />
+        </div>
+      )}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { money, partyFullName, levelLabel } from "@/lib/format";
 import MoneySourceBand from "@/components/politician/MoneySourceBand";
 import SectorList from "@/components/politician/SectorList";
 import DonorList from "@/components/politician/DonorList";
+import OutsideSpendingList from "@/components/politician/OutsideSpendingList";
 import RecordView from "@/components/officeholder/RecordView";
 
 const PARTY_COLOR: Record<string, string> = {
@@ -18,7 +19,7 @@ export default async function OfficeholderPage(props: PageProps<"/officeholder/[
   const data = await getPoliticianBySlug(slug);
   if (!data) notFound();
 
-  const { politician, inStatePct, pacPct, sectors, topDonors } = data;
+  const { politician, inStatePct, pacPct, sectors, topDonors, outsideSpending } = data;
 
   return (
     <div>
@@ -55,6 +56,12 @@ export default async function OfficeholderPage(props: PageProps<"/officeholder/[
         <SectorList sectors={sectors} politicianSlug={politician.slug} />
         <DonorList donors={topDonors} politicianSlug={politician.slug} />
       </div>
+
+      <OutsideSpendingList
+        supportTotal={outsideSpending.supportTotal}
+        opposeTotal={outsideSpending.opposeTotal}
+        spenders={outsideSpending.spenders}
+      />
     </div>
   );
 }
