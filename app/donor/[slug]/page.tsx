@@ -47,6 +47,7 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
             <p className="mt-3 text-[14px] text-ink-tertiary">
               {[
                 donor.committeeDesignation,
+                donor.committeeType,
                 donor.committeeOrgType,
                 donor.registeredSince ? `Registered with the FEC since ${donor.registeredSince.getFullYear()}` : null,
               ]

@@ -92,6 +92,7 @@ type FecScheduleARecord = {
 
 type FecCommitteeDetail = {
   designation_full: string | null;
+  committee_type_full: string | null;
   organization_type_full: string | null;
   first_file_date: string | null;
 };
@@ -99,6 +100,7 @@ type FecCommitteeDetail = {
 type CommitteeMeta = {
   fecCommitteeId: string;
   committeeDesignation: string | null;
+  committeeType: string | null;
   committeeOrgType: string | null;
   registeredSince: Date | null;
 };
@@ -111,6 +113,7 @@ async function fetchCommitteeMetadata(committeeId: string): Promise<CommitteeMet
     return {
       fecCommitteeId: committeeId,
       committeeDesignation: c.designation_full,
+      committeeType: c.committee_type_full,
       committeeOrgType: c.organization_type_full,
       registeredSince: c.first_file_date ? new Date(c.first_file_date) : null,
     };
@@ -222,14 +225,15 @@ async function upsertDonor(record: FecScheduleARecord, isPac: boolean): Promise<
 
   const existing = await db.donor.findUnique({
     where: { slug: key },
-    select: { id: true, committeeDesignation: true, jfcParticipants: true },
+    select: { id: true, committeeDesignation: true, committeeType: true, jfcParticipants: true },
   });
 
   // Only worth an extra FEC call the first time we see this PAC — either
   // it's a brand-new donor row, or an existing one we haven't managed to
-  // enrich yet (a prior run's lookup may have failed or been skipped).
+  // enrich yet (a prior run's lookup may have failed or been skipped, or
+  // ran before `committeeType` existed).
   const meta =
-    isPac && record.contributor_id && (!existing || !existing.committeeDesignation)
+    isPac && record.contributor_id && (!existing || !existing.committeeDesignation || !existing.committeeType)
       ? await fetchCommitteeMetadata(record.contributor_id)
       : null;
 
@@ -279,8 +283,14 @@ async function upsertSpenderDonor(committeeId: string, name: string, city: strin
   const cached = donorIdCache.get(key);
   if (cached) return cached;
 
-  const existing = await db.donor.findUnique({ where: { slug: key }, select: { id: true, committeeDesignation: true } });
-  const meta = !existing || !existing.committeeDesignation ? await fetchCommitteeMetadata(committeeId) : null;
+  const existing = await db.donor.findUnique({
+    where: { slug: key },
+    select: { id: true, committeeDesignation: true, committeeType: true },
+  });
+  const meta =
+    !existing || !existing.committeeDesignation || !existing.committeeType
+      ? await fetchCommitteeMetadata(committeeId)
+      : null;
 
   if (existing) {
     if (meta) await db.donor.update({ where: { id: existing.id }, data: meta });

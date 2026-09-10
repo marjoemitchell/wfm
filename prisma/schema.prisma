@@ -63,6 +63,7 @@ model Donor {
   // there's nothing to know.
   fecCommitteeId       String?
   committeeDesignation String?
+  committeeType        String?
   committeeOrgType     String?
   registeredSince      DateTime?
   // For joint fundraising committees only: the other committees that share

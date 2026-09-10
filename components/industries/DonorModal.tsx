@@ -15,6 +15,7 @@ type DonorDetail = {
     state: string;
     fecCommitteeId: string | null;
     committeeDesignation: string | null;
+    committeeType: string | null;
     committeeOrgType: string | null;
     registeredSince: string | null;
     jfcParticipants: { committeeId: string; name: string; amount: number }[] | null;
@@ -115,6 +116,7 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
               <p className="mt-3 text-[14px] text-ink-tertiary">
                 {[
                   data.donor.committeeDesignation,
+                  data.donor.committeeType,
                   data.donor.committeeOrgType,
                   data.donor.registeredSince ? `Registered with the FEC since ${new Date(data.donor.registeredSince).getFullYear()}` : null,
                 ]
