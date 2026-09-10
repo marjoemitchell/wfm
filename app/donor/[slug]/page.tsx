@@ -9,10 +9,11 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
   const { slug } = await props.params;
   const searchParams = await props.searchParams;
   const fromSlug = typeof searchParams.from === "string" ? searchParams.from : null;
+  const fromIndustries = fromSlug === "industries-spending";
 
   const [data, from] = await Promise.all([
     getDonorBySlug(slug),
-    fromSlug ? getPoliticianNameBySlug(fromSlug) : Promise.resolve(null),
+    fromSlug && !fromIndustries ? getPoliticianNameBySlug(fromSlug) : Promise.resolve(null),
   ]);
   if (!data) notFound();
 
@@ -31,8 +32,11 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
 
   return (
     <div>
-      <Link href={from ? `/officeholder/${from.slug}` : "/"} className="text-eyebrow inline-block pt-[22px] text-accent">
-        ← {from ? from.name : "Roster"}
+      <Link
+        href={fromIndustries ? "/industries?view=spending" : from ? `/officeholder/${from.slug}` : "/"}
+        className="text-eyebrow inline-block pt-[22px] text-accent"
+      >
+        ← {fromIndustries ? "Industries" : from ? from.name : "Roster"}
       </Link>
 
       <div className="grid grid-cols-1 sm:grid-cols-[1.6fr_1fr] items-end gap-[50px] border-b border-accent py-[20px] pb-[40px]">

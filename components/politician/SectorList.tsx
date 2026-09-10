@@ -85,6 +85,7 @@ export default function SectorList({
       <SectorDonorModal politicianSlug={politicianSlug} sector={selected} onClose={() => setSelected(null)} />
       {hasOutsideSpending && (
         <OutsideSpendingModal
+          politicianSlug={politicianSlug}
           politicianName={politicianName}
           outsideSpending={outsideSpending}
           open={outsideOpen}

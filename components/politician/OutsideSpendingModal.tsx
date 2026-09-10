@@ -7,11 +7,13 @@ import { money } from "@/lib/format";
 export type OutsideSpender = { slug: string; name: string; city: string; state: string; support: number; oppose: number };
 
 export default function OutsideSpendingModal({
+  politicianSlug,
   politicianName,
   outsideSpending,
   open,
   onClose,
 }: {
+  politicianSlug: string;
   politicianName: string;
   outsideSpending: { supportTotal: number; opposeTotal: number; spenders: OutsideSpender[] };
   open: boolean;
@@ -80,7 +82,7 @@ export default function OutsideSpendingModal({
           {outsideSpending.spenders.map((s) => (
             <Link
               key={s.slug}
-              href={`/donor/${s.slug}`}
+              href={`/donor/${s.slug}?from=${politicianSlug}`}
               className="flex items-center justify-between gap-3 border-b border-rule-faint py-3 hover:bg-ground-raised"
             >
               <div className="min-w-0">

@@ -15,7 +15,7 @@ export default function OutsideSpenderRow({ row, index }: { row: OutsideSpenderR
 
   return (
     <Link
-      href={`/donor/${row.slug}`}
+      href={`/donor/${row.slug}?from=industries-spending`}
       className="grid grid-cols-[24px_1fr_auto] items-start gap-4 border-b border-rule-faint py-[22px] hover:bg-ground-raised sm:grid-cols-[30px_1.5fr_2fr_1fr] sm:items-center sm:gap-6"
     >
       <span className="text-[13px] text-ink-quiet">{rank(index)}</span>
