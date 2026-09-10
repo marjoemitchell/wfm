@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPoliticianBySlug } from "@/lib/queries";
-import { money, partyFullName, levelLabel } from "@/lib/format";
+import { partyFullName, levelLabel } from "@/lib/format";
 import MoneySourceBand from "@/components/politician/MoneySourceBand";
 import SectorList from "@/components/politician/SectorList";
 import DonorList from "@/components/politician/DonorList";
-import OutsideSpendingList from "@/components/politician/OutsideSpendingList";
+import TotalRaisedStat from "@/components/politician/TotalRaisedStat";
 import RecordView from "@/components/officeholder/RecordView";
 
 const PARTY_COLOR: Record<string, string> = {
@@ -38,16 +38,7 @@ export default async function OfficeholderPage(props: PageProps<"/officeholder/[
             {politician.office} · {politician.cycle} cycle
           </p>
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-          <div>
-            <div className="text-stat-secondary text-ink">{money(politician.totalRaised)}</div>
-            <div className="text-eyebrow mt-2 text-ink-tertiary">Total raised</div>
-          </div>
-          <div>
-            <div className="text-stat-secondary text-ink">{money(politician.cashOnHand)}</div>
-            <div className="text-eyebrow mt-2 text-ink-tertiary">Cash on hand</div>
-          </div>
-        </div>
+        <TotalRaisedStat totalRaised={politician.totalRaised} cashOnHand={politician.cashOnHand} outsideSpending={outsideSpending} />
       </div>
 
       <MoneySourceBand inStatePct={inStatePct} pacPct={pacPct} />
@@ -56,12 +47,6 @@ export default async function OfficeholderPage(props: PageProps<"/officeholder/[
         <SectorList sectors={sectors} politicianSlug={politician.slug} />
         <DonorList donors={topDonors} politicianSlug={politician.slug} />
       </div>
-
-      <OutsideSpendingList
-        supportTotal={outsideSpending.supportTotal}
-        opposeTotal={outsideSpending.opposeTotal}
-        spenders={outsideSpending.spenders}
-      />
     </div>
   );
 }

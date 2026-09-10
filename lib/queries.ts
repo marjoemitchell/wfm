@@ -103,12 +103,23 @@ export async function getRoster(params: { level?: string; sort?: RosterSort; que
 
   const derived = await withInStatePct(politicians);
 
+  // Support-only (never oppose) — this feeds an opt-in "include outside
+  // spending" toggle that adds to a candidate's total, so only spending
+  // that actually helped them belongs in it.
+  const outsideSupport = await db.independentExpenditure.groupBy({
+    by: ["politicianId"],
+    where: { politicianId: { in: politicians.map((p) => p.id) }, support: true },
+    _sum: { amount: true },
+  });
+  const outsideSupportById = new Map(outsideSupport.map((o) => [o.politicianId, toNumber(o._sum.amount ?? 0)]));
+
   const rows = politicians.map((p) => ({
     ...p,
     totalRaised: toNumber(p.totalRaised),
     inStatePct: derived.get(p.id)?.inStatePct ?? 0,
     topSector: derived.get(p.id)?.topSector ?? "Other / Unclassified",
     topSectorPct: derived.get(p.id)?.topSectorPct ?? 0,
+    outsideSupport: outsideSupportById.get(p.id) ?? 0,
   }));
 
   const sort = params.sort ?? "raised";

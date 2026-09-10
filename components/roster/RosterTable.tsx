@@ -1,5 +1,6 @@
 "use client";
 
+import { useId, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { money, percent, rank } from "@/lib/format";
@@ -12,6 +13,7 @@ export type RosterRowData = {
   office: string;
   party: Party;
   totalRaised: number;
+  outsideSupport: number;
   inStatePct: number;
   topSector: string;
   topSectorPct: number;
@@ -21,6 +23,9 @@ export default function RosterTable({ rows }: { rows: RosterRowData[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const compare = (searchParams.get("compare") ?? "").split(",").filter(Boolean);
+  const [showOutside, setShowOutside] = useState(false);
+  const checkboxId = useId();
+  const hasAnyOutsideSpending = rows.some((r) => r.outsideSupport > 0);
 
   function toggle(slug: string) {
     const next = compare.includes(slug)
@@ -41,8 +46,23 @@ export default function RosterTable({ rows }: { rows: RosterRowData[] }) {
 
   return (
     <div>
+      {hasAnyOutsideSpending && (
+        <div className="flex justify-end border-b border-rule-faint py-3">
+          <label htmlFor={checkboxId} className="flex cursor-pointer items-center gap-2 text-[12.5px] text-ink-quiet">
+            <input
+              id={checkboxId}
+              type="checkbox"
+              checked={showOutside}
+              onChange={(e) => setShowOutside(e.target.checked)}
+              className="h-[14px] w-[14px] accent-[var(--color-accent)]"
+            />
+            Include outside spending
+          </label>
+        </div>
+      )}
       {rows.map((row, i) => {
         const checked = compare.includes(row.slug);
+        const displayTotal = showOutside ? row.totalRaised + row.outsideSupport : row.totalRaised;
         return (
           <div
             key={row.slug}
@@ -81,7 +101,7 @@ export default function RosterTable({ rows }: { rows: RosterRowData[] }) {
                 In-state {percent(row.inStatePct)}
               </div>
             </div>
-            <div className="text-roster-amount text-right tabular-nums text-ink">{money(row.totalRaised)}</div>
+            <div className="text-roster-amount text-right tabular-nums text-ink">{money(displayTotal)}</div>
             <button
               type="button"
               onClick={() => toggle(row.slug)}
