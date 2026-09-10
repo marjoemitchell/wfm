@@ -59,22 +59,30 @@ async function withInStatePct<T extends { id: string; totalRaised: unknown }>(
   return result;
 }
 
-export async function getRosterStats() {
-  const politicians = await db.politician.findMany({ select: { id: true, totalRaised: true } });
-  const donorCount = await db.donor.count();
-  const stats = await withInStatePct(politicians);
-  const totalRaised = politicians.reduce((sum, p) => sum + toNumber(p.totalRaised), 0);
-  const medianInState = median([...stats.values()].map((s) => s.inStatePct));
+// Both cached: ingestion now only runs once a day (a Railway cron job),
+// so there's no reason to recompute these full-table aggregations on
+// every navigation between tabs — that was the dominant source of the
+// site's page-to-page latency. getRosterStats() reuses getRoster({})'s
+// already-cached rows instead of independently re-scanning every
+// contribution a second time.
+export const getRosterStats = unstable_cache(
+  async () => {
+    const [rows, donorCount] = await Promise.all([getRoster({}), db.donor.count()]);
+    const trackedMoney = rows.reduce((sum, p) => sum + p.totalRaised, 0);
+    const medianInState = median(rows.map((p) => p.inStatePct));
 
-  return {
-    officeholders: politicians.length,
-    trackedMoney: totalRaised,
-    namedDonors: donorCount,
-    medianInState,
-  };
-}
+    return {
+      officeholders: rows.length,
+      trackedMoney,
+      namedDonors: donorCount,
+      medianInState,
+    };
+  },
+  ["roster-stats"],
+  { revalidate: 3600 }
+);
 
-export async function getRoster(params: { level?: string; sort?: RosterSort; query?: string }) {
+async function getRosterUncached(params: { level?: string; sort?: RosterSort; query?: string }) {
   const level = params.level && params.level !== "All" ? LEVEL_MAP[params.level] : undefined;
   const query = params.query?.trim();
   // Match each word in the query independently against the name rather
@@ -131,6 +139,8 @@ export async function getRoster(params: { level?: string; sort?: RosterSort; que
 
   return rows;
 }
+
+export const getRoster = unstable_cache(getRosterUncached, ["roster"], { revalidate: 3600 });
 
 export async function getPoliticianBySlug(slug: string) {
   const politician = await db.politician.findUnique({ where: { slug } });
@@ -316,97 +326,105 @@ export async function getDonorBySlug(slug: string) {
   };
 }
 
-export async function getIndustries() {
-  const contributions = await db.contribution.findMany({
-    select: {
-      amount: true,
-      donorId: true,
-      donor: { select: { sector: true } },
-      politician: { select: { slug: true, name: true } },
-    },
-  });
+export const getIndustries = unstable_cache(
+  async () => {
+    const contributions = await db.contribution.findMany({
+      select: {
+        amount: true,
+        donorId: true,
+        donor: { select: { sector: true } },
+        politician: { select: { slug: true, name: true } },
+      },
+    });
 
-  const bySector = new Map<
-    string,
-    { total: number; donorIds: Set<string>; donorAmount: Map<string, { name: string; slug: string; amount: number }> }
-  >();
-  for (const c of contributions) {
-    const sector = c.donor.sector;
-    if (!bySector.has(sector)) bySector.set(sector, { total: 0, donorIds: new Set(), donorAmount: new Map() });
-    const bucket = bySector.get(sector)!;
-    const amt = toNumber(c.amount);
-    bucket.total += amt;
-    bucket.donorIds.add(c.donorId);
-    const key = c.politician.slug;
-    const existing = bucket.donorAmount.get(key);
-    if (existing) existing.amount += amt;
-    else bucket.donorAmount.set(key, { name: c.politician.name, slug: c.politician.slug, amount: amt });
-  }
-
-  const trackedTotal = [...bySector.values()].reduce((sum, b) => sum + b.total, 0);
-
-  const rows = [...bySector.entries()]
-    .map(([sector, bucket]) => {
-      const topRecipient = [...bucket.donorAmount.values()].sort((a, b) => b.amount - a.amount)[0];
-      return {
-        sector,
-        slug: slugify(sector),
-        total: bucket.total,
-        share: trackedTotal > 0 ? (bucket.total / trackedTotal) * 100 : 0,
-        donorCount: bucket.donorIds.size,
-        topRecipient: topRecipient ?? null,
-      };
-    })
-    .sort((a, b) => b.total - a.total);
-
-  return { rows, trackedTotal };
-}
-
-export async function getOutsideSpenders() {
-  const expenditures = await db.independentExpenditure.findMany({
-    select: {
-      amount: true,
-      donor: { select: { id: true, slug: true, name: true } },
-      politician: { select: { slug: true, name: true } },
-    },
-  });
-
-  const byDonor = new Map<
-    string,
-    { slug: string; name: string; total: number; candidateSlugs: Set<string>; byCandidate: Map<string, { name: string; slug: string; amount: number }> }
-  >();
-  for (const ie of expenditures) {
-    const amt = toNumber(ie.amount);
-    const key = ie.donor.id;
-    if (!byDonor.has(key)) {
-      byDonor.set(key, { slug: ie.donor.slug, name: ie.donor.name, total: 0, candidateSlugs: new Set(), byCandidate: new Map() });
+    const bySector = new Map<
+      string,
+      { total: number; donorIds: Set<string>; donorAmount: Map<string, { name: string; slug: string; amount: number }> }
+    >();
+    for (const c of contributions) {
+      const sector = c.donor.sector;
+      if (!bySector.has(sector)) bySector.set(sector, { total: 0, donorIds: new Set(), donorAmount: new Map() });
+      const bucket = bySector.get(sector)!;
+      const amt = toNumber(c.amount);
+      bucket.total += amt;
+      bucket.donorIds.add(c.donorId);
+      const key = c.politician.slug;
+      const existing = bucket.donorAmount.get(key);
+      if (existing) existing.amount += amt;
+      else bucket.donorAmount.set(key, { name: c.politician.name, slug: c.politician.slug, amount: amt });
     }
-    const bucket = byDonor.get(key)!;
-    bucket.total += amt;
-    bucket.candidateSlugs.add(ie.politician.slug);
-    const existing = bucket.byCandidate.get(ie.politician.slug);
-    if (existing) existing.amount += amt;
-    else bucket.byCandidate.set(ie.politician.slug, { name: ie.politician.name, slug: ie.politician.slug, amount: amt });
-  }
 
-  const trackedTotal = [...byDonor.values()].reduce((sum, b) => sum + b.total, 0);
+    const trackedTotal = [...bySector.values()].reduce((sum, b) => sum + b.total, 0);
 
-  const rows = [...byDonor.values()]
-    .map((bucket) => {
-      const topCandidate = [...bucket.byCandidate.values()].sort((a, b) => b.amount - a.amount)[0];
-      return {
-        slug: bucket.slug,
-        name: bucket.name,
-        total: bucket.total,
-        share: trackedTotal > 0 ? (bucket.total / trackedTotal) * 100 : 0,
-        candidateCount: bucket.candidateSlugs.size,
-        topCandidate: topCandidate ? { name: topCandidate.name, slug: topCandidate.slug } : null,
-      };
-    })
-    .sort((a, b) => b.total - a.total);
+    const rows = [...bySector.entries()]
+      .map(([sector, bucket]) => {
+        const topRecipient = [...bucket.donorAmount.values()].sort((a, b) => b.amount - a.amount)[0];
+        return {
+          sector,
+          slug: slugify(sector),
+          total: bucket.total,
+          share: trackedTotal > 0 ? (bucket.total / trackedTotal) * 100 : 0,
+          donorCount: bucket.donorIds.size,
+          topRecipient: topRecipient ?? null,
+        };
+      })
+      .sort((a, b) => b.total - a.total);
 
-  return { rows, trackedTotal };
-}
+    return { rows, trackedTotal };
+  },
+  ["industries"],
+  { revalidate: 3600 }
+);
+
+export const getOutsideSpenders = unstable_cache(
+  async () => {
+    const expenditures = await db.independentExpenditure.findMany({
+      select: {
+        amount: true,
+        donor: { select: { id: true, slug: true, name: true } },
+        politician: { select: { slug: true, name: true } },
+      },
+    });
+
+    const byDonor = new Map<
+      string,
+      { slug: string; name: string; total: number; candidateSlugs: Set<string>; byCandidate: Map<string, { name: string; slug: string; amount: number }> }
+    >();
+    for (const ie of expenditures) {
+      const amt = toNumber(ie.amount);
+      const key = ie.donor.id;
+      if (!byDonor.has(key)) {
+        byDonor.set(key, { slug: ie.donor.slug, name: ie.donor.name, total: 0, candidateSlugs: new Set(), byCandidate: new Map() });
+      }
+      const bucket = byDonor.get(key)!;
+      bucket.total += amt;
+      bucket.candidateSlugs.add(ie.politician.slug);
+      const existing = bucket.byCandidate.get(ie.politician.slug);
+      if (existing) existing.amount += amt;
+      else bucket.byCandidate.set(ie.politician.slug, { name: ie.politician.name, slug: ie.politician.slug, amount: amt });
+    }
+
+    const trackedTotal = [...byDonor.values()].reduce((sum, b) => sum + b.total, 0);
+
+    const rows = [...byDonor.values()]
+      .map((bucket) => {
+        const topCandidate = [...bucket.byCandidate.values()].sort((a, b) => b.amount - a.amount)[0];
+        return {
+          slug: bucket.slug,
+          name: bucket.name,
+          total: bucket.total,
+          share: trackedTotal > 0 ? (bucket.total / trackedTotal) * 100 : 0,
+          candidateCount: bucket.candidateSlugs.size,
+          topCandidate: topCandidate ? { name: topCandidate.name, slug: topCandidate.slug } : null,
+        };
+      })
+      .sort((a, b) => b.total - a.total);
+
+    return { rows, trackedTotal };
+  },
+  ["outside-spenders"],
+  { revalidate: 3600 }
+);
 
 export async function getSectorBySlug(slug: string) {
   // Sector is a plain string on Donor, not its own model with a stored
