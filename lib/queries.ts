@@ -305,8 +305,15 @@ export async function getDonorBySlug(slug: string) {
     payee: ie.payee,
   }));
   const ieTotal = ieRows.reduce((sum, r) => sum + r.amount, 0);
+  const ieRecipients = new Set(ieRows.map((r) => r.politician.slug)).size;
 
-  return { donor, rows, totalGiven, recipients, independentExpenditures: { total: ieTotal, rows: ieRows } };
+  return {
+    donor,
+    rows,
+    totalGiven,
+    recipients,
+    independentExpenditures: { total: ieTotal, recipients: ieRecipients, rows: ieRows },
+  };
 }
 
 export async function getIndustries() {

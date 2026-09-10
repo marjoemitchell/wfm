@@ -24,6 +24,7 @@ type DonorDetail = {
   rows: { politician: { slug: string; name: string; office: string; party: Party }; amount: number; date: string }[];
   independentExpenditures: {
     total: number;
+    recipients: number;
     rows: {
       politician: { slug: string; name: string; office: string; party: Party };
       amount: number;
@@ -69,6 +70,15 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
   if (!slug) return null;
   const data = entry?.slug === slug ? entry.detail : null;
   const loading = !data;
+
+  // A pure independent-expenditure spender never makes direct contributions
+  // by law, so totalGiven/recipients are always 0 for them — showing that
+  // in the headline reads as broken next to a page full of IE activity.
+  const isPureSpender = !!data && data.rows.length === 0 && data.independentExpenditures.rows.length > 0;
+  const headlineAmount = data ? (isPureSpender ? data.independentExpenditures.total : data.totalGiven) : 0;
+  const headlineAmountLabel = isPureSpender ? "Total spent" : "Total given";
+  const headlineCount = data ? (isPureSpender ? data.independentExpenditures.recipients : data.recipients) : 0;
+  const headlineCountLabel = isPureSpender ? "Candidates" : "Recipients";
 
   return (
     <div
@@ -129,15 +139,15 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
             <div className="mt-5 flex gap-10 border-y border-rule py-4">
               <div>
                 <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 26 }}>
-                  {money(data.totalGiven)}
+                  {money(headlineAmount)}
                 </div>
-                <div className="text-eyebrow mt-1 text-ink-tertiary">Total given</div>
+                <div className="text-eyebrow mt-1 text-ink-tertiary">{headlineAmountLabel}</div>
               </div>
               <div>
                 <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 26 }}>
-                  {data.recipients}
+                  {headlineCount}
                 </div>
-                <div className="text-eyebrow mt-1 text-ink-tertiary">Recipients</div>
+                <div className="text-eyebrow mt-1 text-ink-tertiary">{headlineCountLabel}</div>
               </div>
             </div>
 

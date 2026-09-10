@@ -18,6 +18,17 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
 
   const { donor, rows, totalGiven, recipients, independentExpenditures } = data;
 
+  // A pure independent-expenditure spender never makes direct contributions
+  // by law, so totalGiven/recipients are always 0 for them — showing that
+  // in the headline reads as broken next to a page full of IE activity.
+  // Swap to what they've actually spent whenever there's nothing to show
+  // for direct giving.
+  const isPureSpender = rows.length === 0 && independentExpenditures.rows.length > 0;
+  const headlineAmount = isPureSpender ? independentExpenditures.total : totalGiven;
+  const headlineAmountLabel = isPureSpender ? "Total spent" : "Total given";
+  const headlineCount = isPureSpender ? independentExpenditures.recipients : recipients;
+  const headlineCountLabel = isPureSpender ? "Candidates" : "Recipients";
+
   return (
     <div>
       <Link href={from ? `/officeholder/${from.slug}` : "/"} className="text-eyebrow inline-block pt-[22px] text-accent">
@@ -59,12 +70,12 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
           <div>
-            <div className="text-stat-secondary text-ink">{money(totalGiven)}</div>
-            <div className="text-eyebrow mt-2 text-ink-tertiary">Total given</div>
+            <div className="text-stat-secondary text-ink">{money(headlineAmount)}</div>
+            <div className="text-eyebrow mt-2 text-ink-tertiary">{headlineAmountLabel}</div>
           </div>
           <div>
-            <div className="text-stat-secondary text-ink">{recipients}</div>
-            <div className="text-eyebrow mt-2 text-ink-tertiary">Recipients</div>
+            <div className="text-stat-secondary text-ink">{headlineCount}</div>
+            <div className="text-eyebrow mt-2 text-ink-tertiary">{headlineCountLabel}</div>
           </div>
         </div>
       </div>
