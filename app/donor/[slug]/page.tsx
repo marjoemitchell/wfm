@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getDonorBySlug, getPoliticianNameBySlug } from "@/lib/queries";
 import { money } from "@/lib/format";
 import RecipientList from "@/components/donor/RecipientList";
-import IndependentExpenditureList from "@/components/donor/IndependentExpenditureList";
+import IndependentExpenditureCandidateList from "@/components/donor/IndependentExpenditureCandidateList";
 
 export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
   const { slug } = await props.params;
@@ -85,16 +85,16 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
         </div>
       )}
 
-      {independentExpenditures.rows.length > 0 && (
+      {independentExpenditures.rows.length > 0 ? (
         <div className="pt-9">
-          <IndependentExpenditureList rows={independentExpenditures.rows} />
+          <IndependentExpenditureCandidateList donorName={donor.name} rows={independentExpenditures.rows} />
         </div>
-      )}
-
-      {rows.length > 0 && (
-        <div className="pt-9">
-          <RecipientList rows={rows} />
-        </div>
+      ) : (
+        rows.length > 0 && (
+          <div className="pt-9">
+            <RecipientList rows={rows} />
+          </div>
+        )
       )}
     </div>
   );
