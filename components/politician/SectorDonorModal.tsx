@@ -78,20 +78,20 @@ export default function SectorDonorModal({
 
         {data && (
           <>
-            <h2 className="mt-2 text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: "-0.02em" }}>
+            <h2 className="mt-2 text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 38, letterSpacing: "-0.02em" }}>
               {data.sector}
             </h2>
-            <p className="mt-2 text-[15px] text-ink-secondary">Donors to {data.politicianName}</p>
+            <p className="mt-2 text-[18px] text-ink-secondary">Donors to {data.politicianName}</p>
 
             <div className="mt-5 flex gap-10 border-y border-rule py-4">
               <div>
-                <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 26 }}>
+                <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 31 }}>
                   {money(data.total)}
                 </div>
                 <div className="text-eyebrow mt-1 text-ink-tertiary">Total from sector</div>
               </div>
               <div>
-                <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 26 }}>
+                <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 31 }}>
                   {data.donorCount}
                 </div>
                 <div className="text-eyebrow mt-1 text-ink-tertiary">Donors</div>
@@ -106,13 +106,13 @@ export default function SectorDonorModal({
                   className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-rule-faint py-3 hover:bg-ground-raised"
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-[15.5px] text-ink">{d.name}</div>
-                    {d.employer && <div className="truncate text-[13px] text-ink-tertiary">{d.employer}</div>}
-                    <div className="truncate text-[13px] text-ink-tertiary">
+                    <div className="truncate text-[18.6px] text-ink">{d.name}</div>
+                    {d.employer && <div className="truncate text-[15.6px] text-ink-tertiary">{d.employer}</div>}
+                    <div className="truncate text-[15.6px] text-ink-tertiary">
                       {d.city}, {d.state}
                     </div>
                   </div>
-                  <div className="text-right text-[16px] tabular-nums text-ink">{money(d.amount)}</div>
+                  <div className="text-right text-[19.2px] tabular-nums text-ink">{money(d.amount)}</div>
                 </Link>
               ))}
             </div>

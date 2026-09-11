@@ -53,24 +53,24 @@ export default function OutsideSpendingModal({
           </button>
         </div>
 
-        <h2 className="mt-2 text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: "-0.02em" }}>
+        <h2 className="mt-2 text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 38, letterSpacing: "-0.02em" }}>
           {politicianName}
         </h2>
-        <p className="mt-2 text-[15px] text-ink-secondary">
+        <p className="mt-2 text-[18px] text-ink-secondary">
           Spent independently by Super PACs and similar committees. Paid to vendors, never given to the campaign
           directly, so it is kept separate from the total raised.
         </p>
 
         <div className="mt-5 flex gap-10 border-y border-rule py-4">
           <div>
-            <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 26 }}>
+            <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 31 }}>
               {money(outsideSpending.supportTotal)}
             </div>
             <div className="text-eyebrow mt-1 text-ink-tertiary">Supporting</div>
           </div>
           {outsideSpending.opposeTotal > 0 && (
             <div>
-              <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 26 }}>
+              <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 31 }}>
                 {money(outsideSpending.opposeTotal)}
               </div>
               <div className="text-eyebrow mt-1 text-ink-tertiary">Opposing</div>
@@ -86,12 +86,12 @@ export default function OutsideSpendingModal({
               className="flex items-center justify-between gap-3 border-b border-rule-faint py-3 hover:bg-ground-raised"
             >
               <div className="min-w-0">
-                <div className="truncate text-[15.5px] text-ink">{s.name}</div>
-                <div className="truncate text-[13px] text-ink-tertiary">
+                <div className="truncate text-[18.6px] text-ink">{s.name}</div>
+                <div className="truncate text-[15.6px] text-ink-tertiary">
                   {s.city}, {s.state}
                 </div>
               </div>
-              <div className="shrink-0 text-right text-[15px] tabular-nums text-ink">
+              <div className="shrink-0 text-right text-[18px] tabular-nums text-ink">
                 {s.support > 0 && <div>{money(s.support)} for</div>}
                 {s.oppose > 0 && <div>{money(s.oppose)} against</div>}
               </div>

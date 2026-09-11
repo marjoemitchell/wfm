@@ -24,7 +24,7 @@ export default function HeadlineBand({
         <div key={cell.label} className="pt-[34px] pr-[26px] pb-[30px]">
           <div className="text-stat-headline text-ink">{cell.value}</div>
           <div className="text-eyebrow mt-3 text-accent">{cell.label}</div>
-          <p className="mt-1 text-[14px] leading-[1.45] text-ink-tertiary">{cell.note}</p>
+          <p className="mt-1 text-[16.8px] leading-[1.45] text-ink-tertiary">{cell.note}</p>
         </div>
       ))}
     </div>

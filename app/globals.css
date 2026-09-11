@@ -41,77 +41,80 @@ body {
 }
 
 @layer components {
-  /* Playfair display roles */
+  /* Playfair display roles. Fluid (clamp) sizing: the desktop max is the
+     deliberately large size, but a fixed px would blow up mobile layouts
+     (long candidate/PAC names wrapping across many lines), so each role
+     shrinks smoothly down to a mobile-appropriate minimum instead. */
   .text-page-headline {
     font-family: var(--font-display);
-    font-size: 60px;
+    font-size: clamp(38px, 9vw, 72px);
     font-weight: 400;
     letter-spacing: -0.03em;
     line-height: 1;
   }
   .text-detail-name {
     font-family: var(--font-display);
-    font-size: 76px;
+    font-size: clamp(42px, 10vw, 91.2px);
     font-weight: 400;
     letter-spacing: -0.035em;
     line-height: 0.94;
   }
   .text-donor-page-name {
     font-family: var(--font-display);
-    font-size: 68px;
+    font-size: clamp(38px, 9.5vw, 81.6px);
     font-weight: 400;
     letter-spacing: -0.03em;
     line-height: 0.96;
   }
   .text-stat-headline {
     font-family: var(--font-display);
-    font-size: 46px;
+    font-size: clamp(30px, 7vw, 55.2px);
     font-weight: 400;
     letter-spacing: -0.025em;
     line-height: 1;
   }
   .text-stat-secondary {
     font-family: var(--font-display);
-    font-size: 40px;
+    font-size: clamp(28px, 6.5vw, 48px);
     font-weight: 400;
     letter-spacing: -0.025em;
     line-height: 1;
   }
   .text-percent-callout {
     font-family: var(--font-display);
-    font-size: 54px;
+    font-size: clamp(34px, 8vw, 64.8px);
     font-weight: 400;
     letter-spacing: -0.03em;
     line-height: 1;
   }
   .text-roster-name {
     font-family: var(--font-display);
-    font-size: 25px;
+    font-size: clamp(19px, 5.5vw, 30px);
     font-weight: 400;
     letter-spacing: -0.015em;
     line-height: 1.15;
   }
   .text-roster-amount {
     font-family: var(--font-display);
-    font-size: 27px;
+    font-size: clamp(19px, 5.5vw, 32.4px);
     font-weight: 400;
     letter-spacing: -0.02em;
   }
   .text-donor-row-name {
     font-family: var(--font-display);
-    font-size: 19px;
+    font-size: clamp(16px, 4.5vw, 22.8px);
     font-weight: 400;
     letter-spacing: -0.01em;
   }
   .text-recipient-name {
     font-family: var(--font-display);
-    font-size: 24px;
+    font-size: clamp(18px, 5.2vw, 28.8px);
     font-weight: 400;
     letter-spacing: -0.02em;
   }
   .text-compare-name {
     font-family: var(--font-display);
-    font-size: 28px;
+    font-size: clamp(20px, 6vw, 33.6px);
     font-weight: 400;
     letter-spacing: -0.02em;
     line-height: 1.1;
@@ -120,38 +123,38 @@ body {
   /* Archivo UI roles */
   .text-eyebrow {
     font-family: var(--font-sans);
-    font-size: 12.5px;
+    font-size: 15px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
   }
   .text-metric-label {
     font-family: var(--font-sans);
-    font-size: 12.5px;
+    font-size: 15px;
     letter-spacing: 0.15em;
     text-transform: uppercase;
   }
   .text-nav-tab {
     font-family: var(--font-sans);
-    font-size: 13px;
+    font-size: 15.6px;
     letter-spacing: 0.22em;
     text-transform: uppercase;
   }
   .text-body-copy {
     font-family: var(--font-sans);
-    font-size: 15.5px;
+    font-size: 18.6px;
     line-height: 1.55;
   }
   .text-table-value {
     font-family: var(--font-sans);
-    font-size: 16px;
+    font-size: 19.2px;
   }
   .text-sub-label {
     font-family: var(--font-sans);
-    font-size: 13.5px;
+    font-size: 16.2px;
   }
   .text-btn-cta {
     font-family: var(--font-sans);
-    font-size: 13px;
+    font-size: 15.6px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
   }
@@ -175,7 +178,7 @@ body {
     font-family: var(--font-sans);
     font-weight: 600;
     letter-spacing: 0.01em;
-    font-size: clamp(15px, 3.4vw, 22px);
+    font-size: clamp(18px, 4.1vw, 26.4px);
     line-height: 1;
   }
   .logo-mark__wordmark {
@@ -183,7 +186,7 @@ body {
     font-weight: 500;
     letter-spacing: -0.025em;
     line-height: 1;
-    font-size: clamp(18px, 4.2vw, 32px);
+    font-size: clamp(21.6px, 5vw, 38.4px);
     color: var(--color-ink);
     padding: 13px clamp(12px, 2.6vw, 20px);
     white-space: nowrap;
@@ -198,7 +201,7 @@ body {
     .logo-mark__block {
       width: 42px;
       height: 42px;
-      font-size: 15px;
+      font-size: 18px;
     }
   }
 }

@@ -32,7 +32,7 @@ export default function CompareCard({ data, onRemove }: { data: CompareCardData;
   return (
     <div className="bg-ground px-6 pt-6 pb-[26px]">
       <div className="flex items-start justify-between">
-        <span className="text-[12.5px] uppercase" style={{ color: PARTY_COLOR[politician.party], letterSpacing: "0.16em" }}>
+        <span className="text-[15px] uppercase" style={{ color: PARTY_COLOR[politician.party], letterSpacing: "0.16em" }}>
           {PARTY_LABEL[politician.party]}
         </span>
         {onRemove && (
@@ -44,16 +44,16 @@ export default function CompareCard({ data, onRemove }: { data: CompareCardData;
       <Link href={`/officeholder/${politician.slug}`} className="block">
         <div className="text-compare-name mt-2 text-ink">{politician.name}</div>
       </Link>
-      <div className="text-[13.5px] text-ink-tertiary">{politician.office}</div>
+      <div className="text-[16.2px] text-ink-tertiary">{politician.office}</div>
 
       <div className="mt-6 flex flex-col gap-[18px]">
         {metrics.map((m) => (
           <div key={m.label}>
             <div className="flex items-center justify-between">
-              <span className="text-[12.5px] uppercase text-ink-quiet" style={{ letterSpacing: "0.14em" }}>
+              <span className="text-[15px] uppercase text-ink-quiet" style={{ letterSpacing: "0.14em" }}>
                 {m.label}
               </span>
-              <span className="text-[16.5px] tabular-nums text-ink">{m.value}</span>
+              <span className="text-[19.8px] tabular-nums text-ink">{m.value}</span>
             </div>
             <div className="mt-1 h-[2px] w-full bg-track">
               <div className="h-[2px]" style={{ width: `${Math.min(100, Math.max(0, m.pct))}%`, background: m.color }} />
@@ -65,7 +65,7 @@ export default function CompareCard({ data, onRemove }: { data: CompareCardData;
       <div className="mt-[26px] border-t border-rule pt-4">
         <div className="text-eyebrow text-ink-quiet">Top sectors</div>
         {data.topSectors.map((s) => (
-          <div key={s.name} className="mt-2 flex items-center justify-between text-[14px]">
+          <div key={s.name} className="mt-2 flex items-center justify-between text-[16.8px]">
             <span className="text-ink-secondary">{s.name}</span>
             <span className="tabular-nums text-ink">{money(s.amount)}</span>
           </div>

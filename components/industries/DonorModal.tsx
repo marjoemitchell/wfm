@@ -38,7 +38,7 @@ type DonorDetail = {
 
 export default function DonorModal({ slug, onClose }: { slug: string | null; onClose: () => void }) {
   // Keyed by slug so a stale response for a previously-open donor is never
-  // shown while a new one is loading — `data` below only renders when its
+  // shown while a new one is loading; `data` below only renders when its
   // slug matches the one currently requested.
   const [entry, setEntry] = useState<{ slug: string; detail: DonorDetail } | null>(null);
 
@@ -73,7 +73,7 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
   const loading = !data;
 
   // A pure independent-expenditure spender never makes direct contributions
-  // by law, so totalGiven/recipients are always 0 for them — showing that
+  // by law, so totalGiven/recipients are always 0 for them, and showing that
   // in the headline reads as broken next to a page full of IE activity.
   const isPureSpender = !!data && data.rows.length === 0 && data.independentExpenditures.rows.length > 0;
   const headlineAmount = data ? (isPureSpender ? data.independentExpenditures.total : data.totalGiven) : 0;
@@ -104,16 +104,16 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
 
         {data && (
           <>
-            <h2 className="mt-2 text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: "-0.02em" }}>
+            <h2 className="mt-2 text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 38, letterSpacing: "-0.02em" }}>
               {data.donor.name}
             </h2>
-            <p className="mt-2 text-[15px] text-ink-secondary">
+            <p className="mt-2 text-[18px] text-ink-secondary">
               {data.donor.employer ? `${data.donor.employer} · ` : ""}
               {data.donor.city}, {data.donor.state}
             </p>
 
             {(data.donor.committeeDesignation || data.donor.registeredSince) && (
-              <p className="mt-3 text-[14px] text-ink-tertiary">
+              <p className="mt-3 text-[16.8px] text-ink-tertiary">
                 {[
                   data.donor.committeeDesignation,
                   data.donor.committeeType,
@@ -140,13 +140,13 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
 
             <div className="mt-5 flex gap-10 border-y border-rule py-4">
               <div>
-                <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 26 }}>
+                <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 31 }}>
                   {money(headlineAmount)}
                 </div>
                 <div className="text-eyebrow mt-1 text-ink-tertiary">{headlineAmountLabel}</div>
               </div>
               <div>
-                <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 26 }}>
+                <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 31 }}>
                   {headlineCount}
                 </div>
                 <div className="text-eyebrow mt-1 text-ink-tertiary">{headlineCountLabel}</div>
@@ -156,14 +156,14 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
             {data.donor.jfcParticipants && data.donor.jfcParticipants.length > 0 && (
               <div className="mt-5">
                 <div className="text-eyebrow border-b border-rule pb-2 text-ink-quiet">Joint fundraising participants</div>
-                <p className="mt-2 text-[12px] text-ink-faint">
-                  This committee splits its proceeds with these committees — amounts are its own transfers to each, not
+                <p className="mt-2 text-[14.4px] text-ink-faint">
+                  This committee splits its proceeds with these committees. Amounts are its own transfers to each, not
                   money this candidate received directly.
                 </p>
                 {data.donor.jfcParticipants.map((p) => (
                   <div key={p.committeeId} className="flex items-center justify-between gap-4 border-b border-rule-faint py-3">
-                    <div className="truncate text-[15px] text-ink">{p.name}</div>
-                    <div className="shrink-0 text-[15px] tabular-nums text-ink">{money(p.amount)}</div>
+                    <div className="truncate text-[18px] text-ink">{p.name}</div>
+                    <div className="shrink-0 text-[18px] tabular-nums text-ink">{money(p.amount)}</div>
                   </div>
                 ))}
               </div>
@@ -172,8 +172,8 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
             {data.independentExpenditures.rows.length > 0 && (
               <div className="mt-5">
                 <div className="text-eyebrow border-b border-rule pb-2 text-ink-quiet">Independent expenditures</div>
-                <p className="mt-2 text-[12px] text-ink-faint">
-                  Spent supporting or opposing these candidates — paid to vendors, never given to their campaigns
+                <p className="mt-2 text-[14.4px] text-ink-faint">
+                  Spent supporting or opposing these candidates, paid to vendors and never given to their campaigns
                   directly.
                 </p>
                 {data.independentExpenditures.rows.map((r, i) => (
@@ -183,12 +183,12 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
                     className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-rule-faint py-3 hover:bg-ground-raised"
                   >
                     <div className="min-w-0">
-                      <div className="truncate text-[15.5px] text-ink">{r.politician.name}</div>
-                      <div className="truncate text-[12px] text-ink-tertiary">
+                      <div className="truncate text-[18.6px] text-ink">{r.politician.name}</div>
+                      <div className="truncate text-[14.4px] text-ink-tertiary">
                         {r.support ? "Supporting" : "Opposing"} · {formatDate(r.date)}
                       </div>
                     </div>
-                    <div className="text-right text-[15px] tabular-nums text-ink">{money(r.amount)}</div>
+                    <div className="text-right text-[18px] tabular-nums text-ink">{money(r.amount)}</div>
                   </Link>
                 ))}
               </div>
@@ -204,18 +204,18 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
                   key={`${r.politician.slug}-${i}`}
                   href={`/officeholder/${r.politician.slug}`}
                   // On sm+ every column is a fixed/relative unit (no
-                  // `auto`) — each row is its own independent grid, so an
+                  // `auto`), each row is its own independent grid, so an
                   // auto-sized amount column would resize per-row based on
                   // that row's own digit count, shifting the 1fr name
                   // column (and the party badge after it) left/right row
-                  // to row. On mobile there's no middle column to drift —
+                  // to row. On mobile there's no middle column to drift;
                   // amount+date are one trailing auto block, always
                   // right-anchored regardless of their own width.
                   className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-rule-faint py-3 hover:bg-ground-raised sm:grid-cols-[1fr_100px_100px] sm:gap-4"
                 >
                   <div className="min-w-0">
-                    <div className="truncate text-[16.5px] text-ink">{r.politician.name}</div>
-                    <div className="truncate text-[13px] text-ink-tertiary">{r.politician.office}</div>
+                    <div className="truncate text-[19.8px] text-ink">{r.politician.name}</div>
+                    <div className="truncate text-[15.6px] text-ink-tertiary">{r.politician.office}</div>
                     <div className="mt-1 sm:hidden">
                       <PartyChip party={r.politician.party} bordered={false} />
                     </div>
@@ -224,8 +224,8 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
                     <PartyChip party={r.politician.party} bordered={false} />
                   </div>
                   <div className="text-right">
-                    <div className="text-[16px] tabular-nums text-ink">{money(r.amount)}</div>
-                    <div className="text-[12px] text-ink-tertiary">{formatDate(r.date)}</div>
+                    <div className="text-[19.2px] tabular-nums text-ink">{money(r.amount)}</div>
+                    <div className="text-[14.4px] text-ink-tertiary">{formatDate(r.date)}</div>
                   </div>
                 </Link>
               ))}

@@ -10,7 +10,7 @@ export default function PartyChip({ party, bordered = true }: { party: Party; bo
   const { label, color } = PARTY[party];
   return (
     <span
-      className="inline-block text-[12px] uppercase px-2 py-[3px]"
+      className="inline-block text-[14.4px] uppercase px-2 py-[3px]"
       style={{
         color,
         letterSpacing: "0.16em",

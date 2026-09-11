@@ -39,7 +39,7 @@ export default function FilterBar({
             <Link
               key={b}
               href={buildHref(params, { level: b })}
-              className={`text-[14px] pb-[3px] border-b ${
+              className={`text-[16.8px] pb-[3px] border-b ${
                 active ? "text-ink border-accent" : "text-ink-quiet border-transparent"
               }`}
             >
@@ -49,14 +49,14 @@ export default function FilterBar({
         })}
       </div>
       <div className="flex items-center gap-[22px]">
-        <span className="text-[12px] tracking-[0.2em] uppercase text-ink-quiet">Sort</span>
+        <span className="text-[14.4px] tracking-[0.2em] uppercase text-ink-quiet">Sort</span>
         {SORTS.map((s) => {
           const active = sort === s.key || (!sort && s.key === "raised");
           return (
             <Link
               key={s.key}
               href={buildHref(params, { sort: s.key })}
-              className={`text-[14px] pb-[3px] border-b ${
+              className={`text-[16.8px] pb-[3px] border-b ${
                 active ? "text-ink border-accent" : "text-ink-quiet border-transparent"
               }`}
             >

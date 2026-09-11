@@ -21,10 +21,10 @@ function ResultRow({ option, onPick }: { option: PickerOption; onPick: (slug: st
       className="flex w-full items-center justify-between gap-3 py-2 text-left hover:bg-ground-raised"
     >
       <span className="min-w-0">
-        <span className="block truncate text-[15px] text-ink">{option.name}</span>
-        <span className="block truncate text-[13px] text-ink-tertiary">{option.office}</span>
+        <span className="block truncate text-[18px] text-ink">{option.name}</span>
+        <span className="block truncate text-[15.6px] text-ink-tertiary">{option.office}</span>
       </span>
-      <span className="shrink-0 text-[12px] uppercase text-ink-quiet" style={{ letterSpacing: "0.1em" }}>
+      <span className="shrink-0 text-[14.4px] uppercase text-ink-quiet" style={{ letterSpacing: "0.1em" }}>
         {PARTY_LABEL[option.party]}
       </span>
     </button>
@@ -63,7 +63,7 @@ export default function EmptySlot({
     const recent = recentSlugs.map((s) => bySlug.get(s)).filter((p): p is PickerOption => Boolean(p));
     // Recently-viewed float to the top after the top 4 raisers, then
     // everyone else remains reachable by scrolling instead of being cut
-    // off — this used to hard-truncate at 6 entries total.
+    // off; this used to hard-truncate at 6 entries total.
     const recentSet = new Set(recent.map((p) => p.slug));
     const rest = byRaised.filter((p) => !topSlugs.has(p.slug) && !recentSet.has(p.slug));
     return [...byRaised.slice(0, 4), ...recent, ...rest];
@@ -76,8 +76,8 @@ export default function EmptySlot({
         onClick={() => setOpen(true)}
         className="flex min-h-[280px] w-full flex-col items-center justify-center gap-2 border border-dashed border-border text-ink-quiet hover:border-accent hover:text-ink"
       >
-        <span className="text-[22px] leading-none">+</span>
-        <span className="text-[13px] uppercase" style={{ letterSpacing: "0.14em" }}>
+        <span className="text-[26.4px] leading-none">+</span>
+        <span className="text-[15.6px] uppercase" style={{ letterSpacing: "0.14em" }}>
           Add officeholder
         </span>
       </button>
@@ -100,7 +100,7 @@ export default function EmptySlot({
             }
           }}
           placeholder="Type a name…"
-          className="w-full bg-transparent text-[15px] text-ink placeholder-ink-quiet outline-none"
+          className="w-full bg-transparent text-[18px] text-ink placeholder-ink-quiet outline-none"
         />
         <button
           type="button"
@@ -120,14 +120,14 @@ export default function EmptySlot({
           {results.length > 0 ? (
             results.map((r) => <ResultRow key={r.slug} option={r} onPick={onPick} />)
           ) : (
-            <p className="py-3 text-[14px] text-ink-quiet">No matches.</p>
+            <p className="py-3 text-[16.8px] text-ink-quiet">No matches.</p>
           )}
         </div>
       ) : (
         shortlist &&
         shortlist.length > 0 && (
           <div className="mt-3">
-            <div className="text-[12px] uppercase text-ink-quiet" style={{ letterSpacing: "0.14em" }}>
+            <div className="text-[14.4px] uppercase text-ink-quiet" style={{ letterSpacing: "0.14em" }}>
               Suggested
             </div>
             <div className="mt-1 max-h-[320px] overflow-y-auto">

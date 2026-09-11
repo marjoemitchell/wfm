@@ -12,7 +12,7 @@ export default function IndustriesTabs({ active }: { active: "industry" | "spend
         <Link
           key={tab.key}
           href={tab.href}
-          className={`text-[14px] pb-[3px] border-b ${
+          className={`text-[16.8px] pb-[3px] border-b ${
             active === tab.key ? "text-ink border-accent" : "text-ink-quiet border-transparent"
           }`}
         >

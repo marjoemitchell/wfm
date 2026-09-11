@@ -23,16 +23,16 @@ export default function RecipientList({ rows }: { rows: Recipient[] }) {
         >
           <div className="min-w-0">
             <div className="text-recipient-name text-ink">{r.politician.name}</div>
-            <div className="text-[13.5px] text-ink-tertiary">{r.politician.office}</div>
+            <div className="text-[16.2px] text-ink-tertiary">{r.politician.office}</div>
             <div className="mt-2 flex flex-wrap items-center gap-2 sm:hidden">
               <PartyChip party={r.politician.party} />
-              <span className="text-[13px] text-ink-secondary">{formatDate(r.date)}</span>
+              <span className="text-[15.6px] text-ink-secondary">{formatDate(r.date)}</span>
             </div>
           </div>
           <div className="hidden sm:block">
             <PartyChip party={r.politician.party} />
           </div>
-          <div className="hidden text-[14px] text-ink-secondary sm:block">{formatDate(r.date)}</div>
+          <div className="hidden text-[16.8px] text-ink-secondary sm:block">{formatDate(r.date)}</div>
           <div className="text-recipient-name text-right tabular-nums text-ink">{money(r.amount)}</div>
         </Link>
       ))}

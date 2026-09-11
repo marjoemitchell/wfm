@@ -25,7 +25,7 @@ export default async function ComparePage(props: PageProps<"/compare">) {
         </div>
         <Link
           href="/compare"
-          className="text-[12.5px] uppercase text-ink-secondary"
+          className="text-[15px] uppercase text-ink-secondary"
           style={{ letterSpacing: "0.18em", border: "1px solid var(--color-border)", padding: "10px 16px" }}
         >
           Clear

@@ -8,8 +8,8 @@ const COORDS = cityCoords as unknown as Record<string, [number, number]>;
 // Geometry (the d3 conic projection, sqrt-based bubble radii) is computed
 // here, server-side, once. It used to be recomputed client-side too after
 // this became interactive, which produced last-bit floating-point
-// differences between Node's and the browser's V8 for the same trig calls
-// — a real hydration mismatch, not just a lint nag. Passing the already-
+// differences between Node's and the browser's V8 for the same trig calls,
+// a real hydration mismatch, not just a lint nag. Passing the already-
 // computed numbers down as props avoids the client ever touching the math.
 export default function MontanaMap({ cities, maxLabels = 6 }: { cities: { city: string; amount: number }[]; maxLabels?: number }) {
   const pathD = getMontanaPathD();
@@ -32,7 +32,7 @@ export default function MontanaMap({ cities, maxLabels = 6 }: { cities: { city: 
     })
     .filter((b): b is NonNullable<typeof b> => b !== null);
 
-  // Only the largest few cities get a text label — labeling every city
+  // Only the largest few cities get a text label. Labeling every city
   // this map might have data for is what caused labels to collide and
   // drift off the bottom of the page previously. The rest are reachable
   // by hover/tap instead.

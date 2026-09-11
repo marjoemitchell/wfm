@@ -66,20 +66,20 @@ export default function CandidateExpenditureModal({
         </div>
 
         <Link href={`/officeholder/${politician.slug}`} className="mt-2 block hover:opacity-80">
-          <h2 className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 32, letterSpacing: "-0.02em" }}>
+          <h2 className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 38, letterSpacing: "-0.02em" }}>
             {politician.name}
           </h2>
         </Link>
         <div className="mt-2 flex items-center gap-2">
           <PartyChip party={politician.party} />
-          <span className="text-[13.5px] text-ink-tertiary">{politician.office}</span>
+          <span className="text-[16.2px] text-ink-tertiary">{politician.office}</span>
         </div>
-        <p className="mt-3 text-[14px] text-ink-secondary">Spent by {donorName}, itemized below.</p>
+        <p className="mt-3 text-[16.8px] text-ink-secondary">Spent by {donorName}, itemized below.</p>
 
         <div className="mt-5 flex gap-10 border-y border-rule py-4">
           {summary.supportTotal > 0 && (
             <div>
-              <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 26 }}>
+              <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 31 }}>
                 {money(summary.supportTotal)}
               </div>
               <div className="text-eyebrow mt-1 text-ink-tertiary">Supporting</div>
@@ -87,7 +87,7 @@ export default function CandidateExpenditureModal({
           )}
           {summary.opposeTotal > 0 && (
             <div>
-              <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 26 }}>
+              <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 31 }}>
                 {money(summary.opposeTotal)}
               </div>
               <div className="text-eyebrow mt-1 text-ink-tertiary">Opposing</div>
@@ -99,16 +99,16 @@ export default function CandidateExpenditureModal({
           {summary.items.map((item, i) => (
             <div key={i} className="grid grid-cols-[1fr_auto] items-start gap-4 border-b border-rule-faint py-3">
               <div className="min-w-0">
-                <div className="text-[11px] uppercase text-ink-quiet" style={{ letterSpacing: "0.1em" }}>
+                <div className="text-[13.2px] uppercase text-ink-quiet" style={{ letterSpacing: "0.1em" }}>
                   {item.support ? "Supporting" : "Opposing"}
                 </div>
-                <div className="mt-1 text-[13.5px] text-ink-secondary">
+                <div className="mt-1 text-[16.2px] text-ink-secondary">
                   {item.description ?? "Independent expenditure"}
                   {item.payee ? ` · Paid to ${item.payee}` : ""}
                 </div>
-                <div className="mt-1 text-[12px] text-ink-tertiary">{formatDate(item.date)}</div>
+                <div className="mt-1 text-[14.4px] text-ink-tertiary">{formatDate(item.date)}</div>
               </div>
-              <div className="shrink-0 text-right text-[15px] tabular-nums text-ink">{money(item.amount)}</div>
+              <div className="shrink-0 text-right text-[18px] tabular-nums text-ink">{money(item.amount)}</div>
             </div>
           ))}
         </div>

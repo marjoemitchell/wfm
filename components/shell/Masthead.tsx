@@ -11,7 +11,7 @@ export default function Masthead() {
   // A real browser refresh (not a client-side search navigation, which
   // never produces a "reload"-type navigation entry) should drop back to
   // the unfiltered roster rather than re-apply whatever search was last
-  // typed — searching again is one keystroke, but there's no way back to
+  // typed: searching again is one keystroke, but there's no way back to
   // "everyone" from a stale, refreshed search except manually clearing it.
   useEffect(() => {
     const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
@@ -38,13 +38,13 @@ export default function Masthead() {
         </p>
       </div>
       <div className="flex w-full min-w-0 flex-[0_1_340px] items-center gap-2 border-b border-border pb-2 sm:w-auto sm:min-w-[300px]">
-        <span className="text-accent text-sm leading-none">⌕</span>
+        <span className="text-accent text-[16.8px] leading-none">⌕</span>
         <input
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Search names, offices, industries"
-          className="w-full bg-transparent text-[16px] text-ink placeholder-ink-quiet outline-none"
+          className="w-full bg-transparent text-[19.2px] text-ink placeholder-ink-quiet outline-none"
         />
       </div>
     </header>

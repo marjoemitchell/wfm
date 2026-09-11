@@ -47,7 +47,7 @@ export default function SectorList({
         <span className="text-eyebrow text-ink-quiet">Sector breakdown</span>
         {hasOutsideSpending && (
           <div className="group relative">
-            <label htmlFor={checkboxId} className="flex cursor-pointer items-center gap-2 text-[12px] text-ink-quiet">
+            <label htmlFor={checkboxId} className="flex cursor-pointer items-center gap-2 text-[14.4px] text-ink-quiet">
               <input
                 id={checkboxId}
                 type="checkbox"
@@ -57,7 +57,7 @@ export default function SectorList({
               />
               Include outside spending
             </label>
-            <div className="pointer-events-none invisible absolute right-0 top-full z-10 mt-2 w-[260px] rounded border border-rule bg-ground-panel p-3 text-[12px] leading-relaxed text-ink-secondary opacity-0 shadow-lg transition-opacity group-hover:visible group-hover:opacity-100">
+            <div className="pointer-events-none invisible absolute right-0 top-full z-10 mt-2 w-[260px] rounded border border-rule bg-ground-panel p-3 text-[14.4px] leading-relaxed text-ink-secondary opacity-0 shadow-lg transition-opacity group-hover:visible group-hover:opacity-100">
               Money spent independently by Super PACs and similar committees to help this candidate. Paid to
               vendors, never given to the campaign directly, so it is left out of the sector breakdown by default.
             </div>
@@ -73,8 +73,8 @@ export default function SectorList({
           className="block w-full border-b border-rule-faint py-[15px] text-left hover:bg-ground-raised"
         >
           <div className="flex items-baseline justify-between">
-            <span className="text-[15.5px] text-ink">{item.name}</span>
-            <span className="text-[16px] tabular-nums text-ink-secondary">{money(item.amount)}</span>
+            <span className="text-[18.6px] text-ink">{item.name}</span>
+            <span className="text-[19.2px] tabular-nums text-ink-secondary">{money(item.amount)}</span>
           </div>
           <div className="mt-2 h-[2px] w-full bg-track">
             <div className="h-[2px] bg-accent" style={{ width: `${Math.min(100, item.share)}%` }} />

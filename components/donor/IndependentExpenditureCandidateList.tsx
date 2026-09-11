@@ -58,7 +58,7 @@ export default function IndependentExpenditureCandidateList({
   return (
     <div>
       <div className="border-b border-rule pb-3 text-eyebrow text-ink-quiet">Independent expenditures</div>
-      <p className="mt-2 max-w-[640px] text-[13.5px] text-ink-tertiary">
+      <p className="mt-2 max-w-[640px] text-[16.2px] text-ink-tertiary">
         Money spent supporting or opposing a candidate, paid directly to vendors rather than given to their
         campaign. By law, an independent-expenditure committee can&apos;t coordinate with or donate to the
         candidates it spends on.
@@ -72,7 +72,7 @@ export default function IndependentExpenditureCandidateList({
         >
           <div className="min-w-0">
             <div className="text-recipient-name text-ink">{c.politician.name}</div>
-            <div className="text-[13.5px] text-ink-tertiary">{c.politician.office}</div>
+            <div className="text-[16.2px] text-ink-tertiary">{c.politician.office}</div>
           </div>
           <div className="hidden sm:block">
             <PartyChip party={c.politician.party} />

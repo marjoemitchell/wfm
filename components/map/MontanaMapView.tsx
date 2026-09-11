@@ -17,7 +17,7 @@ export default function MontanaMapView({
   const [hovered, setHovered] = useState<string | null>(null);
 
   // Labeled cities already show their name/amount permanently, so the
-  // hover tooltip only applies to the unlabeled ones — otherwise it'd
+  // hover tooltip only applies to the unlabeled ones, otherwise it'd
   // just duplicate what's already on screen.
   const hoveredBubble = hovered ? unlabeledBubbles.find((b) => b.city === hovered) : undefined;
 
@@ -73,8 +73,8 @@ export default function MontanaMapView({
               transform: "translateY(-50%)",
             }}
           >
-            <div className="text-[13px] text-ink">{b.city}</div>
-            <div className="text-[12.5px] tabular-nums text-ink-secondary">{money(b.amount)}</div>
+            <div className="text-[15.6px] text-ink">{b.city}</div>
+            <div className="text-[15px] tabular-nums text-ink-secondary">{money(b.amount)}</div>
           </div>
         ))}
         {hoveredBubble && (
@@ -87,8 +87,8 @@ export default function MontanaMapView({
               border: "1px solid var(--color-border)",
             }}
           >
-            <div className="text-[13px] text-ink">{hoveredBubble.city}</div>
-            <div className="text-[12.5px] tabular-nums text-ink-secondary">{money(hoveredBubble.amount)}</div>
+            <div className="text-[15.6px] text-ink">{hoveredBubble.city}</div>
+            <div className="text-[15px] tabular-nums text-ink-secondary">{money(hoveredBubble.amount)}</div>
           </div>
         )}
       </div>

@@ -20,7 +20,7 @@ export default function SectorDonorList({ donors }: { donors: SectorDonor[] }) {
     <div>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 border-b border-rule pb-3">
         <span className="text-eyebrow text-ink-quiet">Largest donors</span>
-        <span className="text-[13.5px] text-ink-faint">Click a donor for details</span>
+        <span className="text-[16.2px] text-ink-faint">Click a donor for details</span>
       </div>
       {donors.map((d) => (
         <button
@@ -31,15 +31,15 @@ export default function SectorDonorList({ donors }: { donors: SectorDonor[] }) {
         >
           <div className="min-w-0">
             <div className="text-donor-row-name text-ink">{d.name}</div>
-            {d.employer && <div className="truncate text-[13.5px] text-ink-tertiary">{d.employer}</div>}
-            <div className="text-[13.5px] text-ink-tertiary sm:hidden">
+            {d.employer && <div className="truncate text-[16.2px] text-ink-tertiary">{d.employer}</div>}
+            <div className="text-[16.2px] text-ink-tertiary sm:hidden">
               {d.city}, {d.state}
             </div>
           </div>
-          <div className="hidden text-[14px] text-ink-secondary sm:block">
+          <div className="hidden text-[16.8px] text-ink-secondary sm:block">
             {d.city}, {d.state}
           </div>
-          <div className="text-right text-[16.5px] tabular-nums text-ink">{money(d.amount)}</div>
+          <div className="text-right text-[19.8px] tabular-nums text-ink">{money(d.amount)}</div>
         </button>
       ))}
       <DonorModal slug={selected} onClose={() => setSelected(null)} />

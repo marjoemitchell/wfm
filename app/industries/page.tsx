@@ -31,7 +31,7 @@ export default async function IndustriesPage(props: PageProps<"/industries">) {
         <IndustriesTabs active="spending" />
 
         {rows.length === 0 ? (
-          <div className="py-[70px] text-center text-[15px] text-ink-quiet">No independent expenditures tracked yet.</div>
+          <div className="py-[70px] text-center text-[18px] text-ink-quiet">No independent expenditures tracked yet.</div>
         ) : (
           <div>
             {rows.map((row, i) => (
