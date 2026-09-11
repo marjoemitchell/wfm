@@ -46,7 +46,7 @@ export function getStateFeatures(): StateFeature[] {
 /**
  * Single-hue sequential ramp for the choropleth, built from tokens already
  * in the design system (accent -> accent-hover) rather than an invented
- * scale — dark, low-chroma at the low end (near the ground color) up to
+ * scale: dark, low-chroma at the low end (near the ground color) up to
  * the bright accent-hover red at the high end. `t` is 0-1, pre-normalized
  * by the caller (e.g. via a sqrt scale, since contribution totals are
  * heavily skewed).

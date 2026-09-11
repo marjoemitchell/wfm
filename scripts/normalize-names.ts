@@ -3,7 +3,7 @@
  * (still "LAST, FIRST ..." from the raw filings, ALL CAPS for FEC) into
  * a "First Last" display name + a "Last, First" sortName, and updates
  * the slug to match. Run once after the ingest scripts were updated to
- * produce this format natively — this fixes rows already in the
+ * produce this format natively; this fixes rows already in the
  * database without re-running the (multi-hour) scrapes.
  *
  * Usage: npx tsx scripts/normalize-names.ts
@@ -44,7 +44,7 @@ async function main() {
       console.log(`  ${p.name} -> ${display} (${slug})`);
     } catch (err) {
       // Another process touched this exact row between our read and
-      // write (e.g. a concurrent ingest run reprocessing it) — safe to
+      // write (e.g. a concurrent ingest run reprocessing it), safe to
       // skip, since that process applied an equivalent or newer update.
       console.warn(`  skipped ${p.name}:`, err instanceof Error ? err.message : err);
       skipped++;

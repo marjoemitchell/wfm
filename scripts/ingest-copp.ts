@@ -1,7 +1,7 @@
 /**
  * Pulls real Montana Statewide, Legislature, and Judicial campaign finance
  * data from the Commissioner of Political Practices' public CERS portal
- * (cers-ext.mt.gov/CampaignTracker) — there is no API, so this drives a
+ * (cers-ext.mt.gov/CampaignTracker); there is no API, so this drives a
  * headless browser through the same search/report-viewer flow a person
  * would use.
  *
@@ -11,11 +11,11 @@
  * Election-year mapping (COPP's calendar differs from FEC's single cycle):
  *  - Legislature (House/Senate, 2-year terms): 2026, matching the site's
  *    own "2026 cycle" framing.
- *  - Statewide (Governor, Lt. Gov, AG, SoS, Auditor, Superintendent — all
+ *  - Statewide (Governor, Lt. Gov, AG, SoS, Auditor, Superintendent, all
  *    elected together every 4 years): 2024, their current term's election.
  *  - Judicial (Supreme Court 8-year / District Judge 6-year staggered
  *    terms): tries 2024, then 2022, then 2020 per seat, stopping at the
- *    first year with any candidates. Best-effort — a seat whose last
+ *    first year with any candidates. Best-effort: a seat whose last
  *    election falls outside that window won't be found.
  *
  * Safe to re-run: replaces each politician's contributions on each run.
@@ -139,13 +139,13 @@ type TableCell = string;
 type ExtractedTable = { headers: TableCell[]; rows: TableCell[][] };
 
 // NOTE: this callback is serialized (via .toString()) and run inside the
-// browser page, in total isolation from this file's module scope — no
+// browser page, in total isolation from this file's module scope: no
 // helper functions, no closures over outer variables, nothing but plain
 // browser globals. tsx/esbuild can otherwise wrap even a top-level nested
 // `function` declaration here with a `__name(...)` call that references a
 // helper which doesn't exist in that isolated context, throwing
 // "ReferenceError: __name is not defined". Every step of the extraction is
-// inlined below for that reason — do not factor any part of this back out
+// inlined below for that reason; do not factor any part of this back out
 // into a named function.
 async function extractTables(page: Page): Promise<ExtractedTable[]> {
   return page.evaluate(() => {
@@ -294,7 +294,7 @@ async function processCandidateFinancials(
   let gotCashOnHand = false;
 
   // Each report is a fresh navigation back through the search -> candidate
-  // -> report-list flow rather than page.goBack() — back-navigation on this
+  // -> report-list flow rather than page.goBack(); back-navigation on this
   // site doesn't reliably restore the interactive report-list state, which
   // left every report after the first timing out during testing.
   for (const [index, report] of reports.entries()) {
@@ -355,7 +355,7 @@ async function upsertDonor(c: RawContribution): Promise<string | null> {
   return donor.id;
 }
 
-// Fixed arbitrary key for this script's advisory lock — see ingest-fec.ts
+// Fixed arbitrary key for this script's advisory lock; see ingest-fec.ts
 // for why (a Railway redeploy's cutover doesn't instantly kill the
 // previous job process, and two overlapping runs interleaving
 // delete/insert cycles leaves duplicated contribution rows behind).
@@ -397,7 +397,7 @@ async function main() {
 
       console.log(`\n${office.label} (${year}): ${candidates.length} candidate(s)`);
       for (const candidate of candidates) {
-        // Retry once — occasional transient Postgres connection drops on
+        // Retry once: occasional transient Postgres connection drops on
         // long runs shouldn't permanently skip a candidate.
         for (let attempt = 1; attempt <= 2; attempt++) {
           try {
@@ -411,7 +411,7 @@ async function main() {
             });
             const politician = await db.politician.upsert({
               // Keyed on the stable COPP candidate id, not the derived
-              // slug — see ingest-fec.ts for why keying on slug caused
+              // slug; see ingest-fec.ts for why keying on slug caused
               // duplicate rows across re-runs.
               where: { coppCandidateId: candidate.id },
               create: {
@@ -467,7 +467,7 @@ async function main() {
           }
         }
       }
-      break; // found data for this office/level at this year — don't try older years
+      break; // found data for this office/level at this year, don't try older years
     }
   }
 

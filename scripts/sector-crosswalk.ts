@@ -3,7 +3,7 @@
  *
  * This is a v1 keyword heuristic, not a real crosswalk. Production-quality
  * classification needs an OpenSecrets/CRP-style employer mapping (or a
- * hand-built one against actual filings) — see design/README.md.
+ * hand-built one against actual filings); see design/README.md.
  */
 
 type Rule = { sector: string; keywords: RegExp };

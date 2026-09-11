@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 // Every page (including the built-in /_not-found) renders inside this
-// layout, and the Footer queries the database for data provenance — so
+// layout, and the Footer queries the database for data provenance, so
 // nothing here can be statically prerendered at build time.
 export const dynamic = "force-dynamic";
 

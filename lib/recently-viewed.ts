@@ -18,6 +18,6 @@ export function recordView(slug: string): void {
     const next = [slug, ...existing].slice(0, MAX_STORED);
     window.localStorage.setItem(KEY, JSON.stringify(next));
   } catch {
-    // localStorage unavailable (private browsing, blocked, etc.) — fine to no-op.
+    // localStorage unavailable (private browsing, blocked, etc.), fine to no-op.
   }
 }

@@ -47,7 +47,7 @@ async function main() {
         console.log(`  ${donor.name} -> no committee_type_full returned, leaving null`);
       }
     } catch (err) {
-      // Best-effort — a rate limit or a stale committee id shouldn't stop
+      // Best-effort: a rate limit or a stale committee id shouldn't stop
       // the rest of the backfill. Re-running the script later will retry
       // whatever's still null.
       console.warn(`  skipped ${donor.name}:`, err instanceof Error ? err.message : err);

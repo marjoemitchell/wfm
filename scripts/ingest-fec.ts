@@ -49,7 +49,7 @@ async function fecGet<T>(path: string, params: Record<string, string | number | 
     }
     // Our key's limit is a 60-request token bucket that refills at ~1/sec
     // (confirmed directly against the live API, not the 1000/hour a
-    // "personal key" is nominally supposed to get) — firing faster than
+    // "personal key" is nominally supposed to get); firing faster than
     // that just burns the whole bucket in a burst and spends the rest of
     // the run recovering from 429s. Pacing every call to the refill rate
     // keeps us under it indefinitely instead of bursting and backing off.
@@ -84,7 +84,7 @@ type FecScheduleARecord = {
   entity_type: string | null;
   memo_code: string | null;
   // The contributing committee's own FEC id, present when entity_type is
-  // a PAC/committee rather than an individual — resolves to a real
+  // a PAC/committee rather than an individual: resolves to a real
   // /committee/{id} record we can pull a designation/org type/registration
   // date from for the donor-detail summary.
   contributor_id: string | null;
@@ -118,7 +118,7 @@ async function fetchCommitteeMetadata(committeeId: string): Promise<CommitteeMet
       registeredSince: c.first_file_date ? new Date(c.first_file_date) : null,
     };
   } catch (err) {
-    // Best-effort enrichment for the donor-detail modal — never let a
+    // Best-effort enrichment for the donor-detail modal: never let a
     // failed committee lookup block ingesting the actual contribution
     // data, which is what the site's core numbers depend on.
     console.warn(`  committee lookup failed for ${committeeId}:`, err instanceof Error ? err.message : err);
@@ -139,7 +139,7 @@ type JfcParticipant = { committeeId: string; name: string; amount: number };
 // participants (the candidate's own campaign, sometimes a party committee
 // or another allied PAC) rather than funding one candidate exclusively.
 // Real participant transfers are on the JFC's own Schedule B, tagged
-// purpose category "TRANSFERS" with a real recipient_committee_id — that
+// purpose category "TRANSFERS" with a real recipient_committee_id; that
 // reliably excludes ordinary vendor payments (list rental, ad platforms,
 // fundraising consultants), which never have a recipient committee id.
 async function fetchJfcParticipants(committeeId: string): Promise<JfcParticipant[] | null> {
@@ -189,7 +189,7 @@ function partyCode(fecParty: string): "R" | "D" | "N" {
 }
 
 // "Office" is only the office's actual current title for a sitting
-// incumbent running for the same seat — otherwise it reads as if they
+// incumbent running for the same seat; otherwise it reads as if they
 // already hold it, which is wrong for a challenger or open-seat run
 // (e.g. Seth Bodnar, a university president who has never held office,
 // showing as "U.S. Senator" rather than a candidate for the seat).
@@ -228,7 +228,7 @@ async function upsertDonor(record: FecScheduleARecord, isPac: boolean): Promise<
     select: { id: true, committeeDesignation: true, committeeType: true, jfcParticipants: true },
   });
 
-  // Only worth an extra FEC call the first time we see this PAC — either
+  // Only worth an extra FEC call the first time we see this PAC: either
   // it's a brand-new donor row, or an existing one we haven't managed to
   // enrich yet (a prior run's lookup may have failed or been skipped, or
   // ran before `committeeType` existed).
@@ -238,7 +238,7 @@ async function upsertDonor(record: FecScheduleARecord, isPac: boolean): Promise<
       : null;
 
   // A joint fundraising committee's proceeds get split across several
-  // participants — worth one more (paginated) call, but only the first
+  // participants, worth one more (paginated) call, but only the first
   // time we confirm the designation and haven't already fetched it.
   const jfcParticipants =
     record.contributor_id && meta?.committeeDesignation === "Joint fundraising committee" && (!existing || !existing.jfcParticipants)
@@ -272,7 +272,7 @@ async function upsertDonor(record: FecScheduleARecord, isPac: boolean): Promise<
 
 // The spender on a Schedule E record is always a committee (never an
 // individual) and always comes with its own FEC id already resolved, so
-// this is simpler than upsertDonor — no entity_type branching needed.
+// this is simpler than upsertDonor: no entity_type branching needed.
 async function upsertSpenderDonor(committeeId: string, name: string, city: string | null, state: string | null): Promise<string | null> {
   const cleanName = name?.trim();
   if (!cleanName) return null;
@@ -326,7 +326,7 @@ type FecIndependentExpenditure = {
 // FEC requires a 48-hour advance notice (Form 24, is_notice=true) for
 // large independent expenditures close to an election, and the *same*
 // dollar amount then gets restated in the committee's regular periodic
-// report (Form 3X, is_notice=false) — both show up on Schedule E as
+// report (Form 3X, is_notice=false); both show up on Schedule E as
 // separate records with different file/transaction ids. Verified live
 // against a real race: naively summing all records overstated total
 // spending by roughly 2x. Deduplicating on the actual transaction's own
@@ -391,7 +391,7 @@ async function ingestCandidate(candidate: FecCandidate) {
   console.log(`\n${candidate.name} (${candidate.candidate_id})`);
 
   const totalsRes = await fecGet<{ results: FecTotals[] }>(`/candidate/${candidate.candidate_id}/totals/`, { cycle: CYCLE });
-  // Only an exact match for the target cycle counts — falling back to
+  // Only an exact match for the target cycle counts: falling back to
   // whatever OpenFEC returns first would silently attribute a different
   // (often much older) election's fundraising totals to this cycle.
   const totals = totalsRes.results.find((t) => t.cycle === CYCLE);
@@ -401,12 +401,12 @@ async function ingestCandidate(candidate: FecCandidate) {
   }
 
   const committeesRes = await fecGet<{ results: FecCommittee[] }>(`/candidate/${candidate.candidate_id}/committees/`, { cycle: CYCLE });
-  // Only the candidate's own committees — "P" (principal campaign
+  // Only the candidate's own committees: "P" (principal campaign
   // committee) and "A" (other authorized committee, e.g. a recount fund).
   // Excluding this let joint fundraising committees ("J") and other
   // linked-but-not-owned committees inflate the itemized total well past
   // the candidate's real totals.receipts figure (money raised by a JFC
-  // isn't this candidate's money — it gets split across several
+  // isn't this candidate's money; it gets split across several
   // campaigns).
   const committeeIds = committeesRes.results
     .filter((c) => c.designation === "P" || c.designation === "A")
@@ -421,7 +421,7 @@ async function ingestCandidate(candidate: FecCandidate) {
     return !!existing && existing.fecCandidateId !== candidate.candidate_id;
   });
   const politician = await db.politician.upsert({
-    // Keyed on the stable FEC candidate id, not the derived slug — the
+    // Keyed on the stable FEC candidate id, not the derived slug: the
     // slug changes whenever name-normalization logic changes, and keying
     // on it caused every re-run after such a change to create a second
     // row instead of updating the existing one.
@@ -455,7 +455,7 @@ async function ingestCandidate(candidate: FecCandidate) {
   // stored contributions once the whole fetch has succeeded. Deleting
   // up front (the previous approach) meant a candidate who happened to
   // hit the rate limit partway through a re-fetch ended up with *less*
-  // data than before the run started — repeatedly, for whichever
+  // data than before the run started, repeatedly, for whichever
   // high-volume candidate got unlucky that run. Leaving old (stale but
   // complete) data in place on failure is strictly better than that.
   const allRows: { donorId: string; amount: number; date: Date; isPac: boolean }[] = [];
@@ -468,7 +468,7 @@ async function ingestCandidate(candidate: FecCandidate) {
         {
           committee_id: committeeId,
           // `two_year_transaction_period` assigns records to FEC's filing
-          // bucket for the committee, not by calendar date — verified
+          // bucket for the committee, not by calendar date; verified
           // live that a Senate committee's 2023/2024 general-election
           // contributions still carry period=2026 years later. Explicit
           // min/max_date is what actually scopes this to real 2025-2026
@@ -489,13 +489,13 @@ async function ingestCandidate(candidate: FecCandidate) {
       for (const record of page.results) {
         // Conduit processors (WinRed, ActBlue) file a memo-coded Schedule A
         // line for every underlying small-dollar donor repeating the same
-        // bundled transfer amount/date — informational only. Counting
+        // bundled transfer amount/date, informational only. Counting
         // those alongside the real transfer inflated some candidates'
         // itemized totals to 10-100x their actual FEC-reported receipts.
         if (record.memo_code) continue;
         // entity_type "CAN" is the candidate's own money (a personal loan
         // or contribution to their own campaign, e.g. "JACOBSEN, CHRISTI"
-        // showing up as a top donor to Christi Jacobsen) — not a
+        // showing up as a top donor to Christi Jacobsen), not a
         // third-party donor at all, and definitely not a PAC. It's still
         // counted in the official totals.receipts figure powering
         // totalRaised; it just doesn't belong in a "who funds this
@@ -525,7 +525,7 @@ async function ingestCandidate(candidate: FecCandidate) {
   console.log(`  ingested ${allRows.length} itemized contributions`);
 
   // Independent expenditures (Super PAC spending) are a separate legal
-  // category from contributions entirely — best-effort and isolated from
+  // category from contributions entirely; best-effort and isolated from
   // the contribution data above, which has already been committed by
   // this point. A failure here should never re-trigger (via the outer
   // per-candidate retry loop) a redo of the expensive contribution fetch
@@ -545,7 +545,7 @@ async function ingestCandidate(candidate: FecCandidate) {
 // Fixed arbitrary key for this script's advisory lock. Prevents two
 // overlapping runs (e.g. a Railway redeploy that doesn't instantly kill
 // the previous job's process) from interleaving delete/insert cycles on
-// the same candidate and leaving duplicated contribution rows behind —
+// the same candidate and leaving duplicated contribution rows behind,
 // which happened in practice, twice.
 const LOCK_KEY = 837462001;
 
@@ -572,7 +572,7 @@ async function main() {
     // way a failure here means ingestCandidate already wiped that
     // politician's contributions and only partially reinserted them
     // before throwing, so a candidate that never succeeds is worse than
-    // one we hadn't touched — worth several attempts with a real cooldown
+    // one we hadn't touched, worth several attempts with a real cooldown
     // between them rather than leaving a half-written row.
     for (let attempt = 1; attempt <= 4; attempt++) {
       try {
