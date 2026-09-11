@@ -61,7 +61,7 @@ async function withInStatePct<T extends { id: string; totalRaised: unknown }>(
 
 // Both cached: ingestion now only runs once a day (a Railway cron job),
 // so there's no reason to recompute these full-table aggregations on
-// every navigation between tabs — that was the dominant source of the
+// every navigation between tabs, which was the dominant source of the
 // site's page-to-page latency. getRosterStats() reuses getRoster({})'s
 // already-cached rows instead of independently re-scanning every
 // contribution a second time.
@@ -86,7 +86,7 @@ async function getRosterUncached(params: { level?: string; sort?: RosterSort; qu
   const level = params.level && params.level !== "All" ? LEVEL_MAP[params.level] : undefined;
   const query = params.query?.trim();
   // Match each word in the query independently against the name rather
-  // than requiring the whole phrase as one contiguous substring — a plain
+  // than requiring the whole phrase as one contiguous substring: a plain
   // substring match on "Steve Daines" fails against a stored name like
   // "Steve D. Daines" or "Steven James Daines", since the middle name
   // breaks the contiguous match even though every word the user typed is
@@ -111,7 +111,7 @@ async function getRosterUncached(params: { level?: string; sort?: RosterSort; qu
 
   const derived = await withInStatePct(politicians);
 
-  // Support-only (never oppose) — this feeds an opt-in "include outside
+  // Support-only (never oppose): this feeds an opt-in "include outside
   // spending" toggle that adds to a candidate's total, so only spending
   // that actually helped them belongs in it.
   const outsideSupport = await db.independentExpenditure.groupBy({
@@ -186,8 +186,8 @@ export async function getPoliticianBySlug(slug: string) {
   const topDonors = [...byDonor.values()].sort((a, b) => b.amount - a.amount).slice(0, 12);
 
   // Independent expenditures (Super PAC spending) are never given to this
-  // politician — they're a legally separate category (money a PAC spends
-  // on its own, without coordinating with the campaign) — so they're kept
+  // politician: they're a legally separate category (money a PAC spends
+  // on its own, without coordinating with the campaign), so they're kept
   // entirely out of itemizedTotal/pacPct/sectors/topDonors above, which
   // are all about money the campaign itself received.
   const independentExpenditures = await db.independentExpenditure.findMany({
@@ -223,6 +223,7 @@ export async function getPoliticianBySlug(slug: string) {
     politician: { ...politician, totalRaised: toNumber(politician.totalRaised), cashOnHand: toNumber(politician.cashOnHand) },
     inStatePct: itemizedTotal > 0 ? (inState / itemizedTotal) * 100 : 0,
     pacPct: itemizedTotal > 0 ? (pacAmount / itemizedTotal) * 100 : 0,
+    hasItemizedContributions: itemizedTotal > 0,
     sectors,
     topDonors,
     outsideSpending: { supportTotal, opposeTotal, spenders: outsideSpenders },
@@ -291,8 +292,8 @@ export async function getDonorBySlug(slug: string) {
   const recipients = new Set(rows.map((r) => r.politician.slug)).size;
 
   // A pure independent-expenditure spender (a Super PAC with no direct
-  // contributions at all) would otherwise render this page as empty —
-  // "who they fund" is about contributions, which by law a Super PAC
+  // contributions at all) would otherwise render this page as empty.
+  // "Who they fund" is about contributions, which by law a Super PAC
   // can't make, so their support/opposition shows up here instead.
   const independentExpenditures = await db.independentExpenditure.findMany({
     where: { donorId: donor.id },
@@ -428,7 +429,7 @@ export const getOutsideSpenders = unstable_cache(
 
 export async function getSectorBySlug(slug: string) {
   // Sector is a plain string on Donor, not its own model with a stored
-  // slug — match by slugifying each distinct value rather than a WHERE.
+  // slug, so match by slugifying each distinct value rather than a WHERE.
   const distinctSectors = await db.donor.findMany({ distinct: ["sector"], select: { sector: true } });
   const sector = distinctSectors.map((d) => d.sector).find((s) => slugify(s) === slug);
   if (!sector) return null;
@@ -463,7 +464,7 @@ export async function getSectorBySlug(slug: string) {
   return { sector, total, donorCount: donors.length, donors };
 }
 
-// Cached (5 min) — identical for every visitor and only changes when an
+// Cached (5 min): identical for every visitor and only changes when an
 // ingest run does, so there's no reason to re-scan all politicians on
 // every keystroke-driven navigation in the compare picker.
 export const getAllPoliticiansForPicker = unstable_cache(
@@ -487,7 +488,7 @@ const getMaxTotalRaised = unstable_cache(
   { revalidate: 300 }
 );
 
-// Cached per politician (5 min) — the compare page re-renders on every
+// Cached per politician (5 min): the compare page re-renders on every
 // add/remove in the picker (it reads searchParams, so it can't be a
 // purely static page), and without this, adding a 4th candidate redid
 // the full contribution-aggregation for the 3 that hadn't changed too.

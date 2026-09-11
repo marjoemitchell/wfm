@@ -18,7 +18,7 @@ export default async function OfficeholderPage(props: PageProps<"/officeholder/[
   const data = await getPoliticianBySlug(slug);
   if (!data) notFound();
 
-  const { politician, inStatePct, pacPct, sectors, topDonors, outsideSpending } = data;
+  const { politician, inStatePct, pacPct, hasItemizedContributions, sectors, topDonors, outsideSpending } = data;
 
   return (
     <div>
@@ -33,7 +33,7 @@ export default async function OfficeholderPage(props: PageProps<"/officeholder/[
             {partyFullName(politician.party)} · {levelLabel(politician.level)}
           </div>
           <h1 className="text-detail-name mt-2 text-ink">{politician.name}</h1>
-          <p className="mt-3 text-[16.5px] text-ink-secondary">
+          <p className="mt-3 text-[19.8px] text-ink-secondary">
             {politician.office} · {politician.cycle} cycle
           </p>
         </div>
@@ -49,7 +49,7 @@ export default async function OfficeholderPage(props: PageProps<"/officeholder/[
         </div>
       </div>
 
-      <MoneySourceBand inStatePct={inStatePct} pacPct={pacPct} />
+      {hasItemizedContributions && <MoneySourceBand inStatePct={inStatePct} pacPct={pacPct} />}
 
       <div className="grid grid-cols-1 gap-9 pt-9 sm:grid-cols-[1fr_1.35fr] sm:gap-[56px]">
         <SectorList
