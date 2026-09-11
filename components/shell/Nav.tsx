@@ -8,6 +8,7 @@ const TABS = [
   { href: "/industries", label: "Industries", match: (p: string) => p.startsWith("/industries") },
   { href: "/compare", label: "Compare", match: (p: string) => p.startsWith("/compare") },
   { href: "/map", label: "Donor geography", match: (p: string) => p.startsWith("/map") },
+  { href: "/rules", label: "The Rules", match: (p: string) => p.startsWith("/rules") },
 ];
 
 export default function Nav() {
