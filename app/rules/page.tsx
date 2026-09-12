@@ -10,7 +10,7 @@ export default function RulesPage() {
         <p className="text-body-copy mt-3 max-w-[640px] text-ink-secondary" style={{ textWrap: "pretty" }}>
           Two separate bodies of law govern the officeholders in this tracker. Federal rules cover the U.S. Senate
           and House seats; Montana&apos;s own rules, enforced by the Commissioner of Political Practices, cover the
-          governor, statewide offices, the legislature and the courts. The caps are an order of magnitude apart.
+          governor, statewide offices, the legislature and the courts.
         </p>
       </div>
 

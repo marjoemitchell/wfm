@@ -88,7 +88,7 @@ export default function StateLimitsTable() {
       <div className="mt-4 flex flex-wrap gap-[26px] text-[13.8px] text-ink-tertiary">
         <span className="flex items-center">
           <span className="mr-[7px] inline-block h-[7px] w-[7px] bg-accent" />
-          Prohibited outright
+          Prohibited
         </span>
         <span className="flex items-center">
           <span className="mr-[7px] inline-block h-[7px] w-[7px]" style={{ background: "var(--color-gold)" }} />
