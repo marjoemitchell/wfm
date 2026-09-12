@@ -15,8 +15,8 @@ export default async function MapPage() {
         <div>
           <h1 className="text-page-headline text-ink">Where the donors are</h1>
           <p className="text-body-copy mt-3 max-w-[520px] text-ink-secondary">
-            Every itemized contribution, placed at the donor&apos;s mailing address. Shading is each state&apos;s
-            total.
+            Every itemized contribution, placed at the giver&apos;s mailing address: an individual, PAC, or
+            committee. Shading is each state&apos;s total.
           </p>
         </div>
         <div>
