@@ -16,7 +16,7 @@ export default async function MapPage() {
           <h1 className="text-page-headline text-ink">Where the donors are</h1>
           <p className="text-body-copy mt-3 max-w-[520px] text-ink-secondary">
             Every itemized contribution, placed at the donor&apos;s mailing address. Shading is each state&apos;s
-            total; Montana is outlined in gold.
+            total.
           </p>
         </div>
         <div>
