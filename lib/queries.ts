@@ -522,27 +522,68 @@ const getComparePoliticianCard = unstable_cache(
       .slice(0, 3)
       .map(([name, amount]) => ({ name, amount }));
 
+    // Super PAC / independent-expenditure spending is legally separate from
+    // money the campaign itself received (see getPoliticianBySlug), so it's
+    // tracked as its own pair of totals rather than folded into `total` above.
+    const outsideAgg = await db.independentExpenditure.groupBy({
+      by: ["support"],
+      where: { politicianId: p.id },
+      _sum: { amount: true },
+    });
+    let outsideSupportTotal = 0;
+    let outsideOpposeTotal = 0;
+    for (const row of outsideAgg) {
+      const amt = toNumber(row._sum.amount ?? 0);
+      if (row.support) outsideSupportTotal = amt;
+      else outsideOpposeTotal = amt;
+    }
+
     return {
       politician: { ...p, totalRaised: toNumber(p.totalRaised), cashOnHand: toNumber(p.cashOnHand) },
       inStatePct: total > 0 ? (inState / total) * 100 : 0,
       pacPct: total > 0 ? (pac / total) * 100 : 0,
       outOfStatePct: total > 0 ? (outOfState / total) * 100 : 0,
       topSectors,
+      outsideSupportTotal,
+      outsideOpposeTotal,
     };
   },
   ["compare-politician-card"],
   { revalidate: 300 }
 );
 
+const getMaxOutsideSpending = unstable_cache(
+  async () => {
+    const grouped = await db.independentExpenditure.groupBy({
+      by: ["politicianId"],
+      _sum: { amount: true },
+    });
+    let max = 0;
+    for (const g of grouped) {
+      const amt = toNumber(g._sum.amount ?? 0);
+      if (amt > max) max = amt;
+    }
+    return max;
+  },
+  ["max-outside-spending"],
+  { revalidate: 300 }
+);
+
 export async function getComparePoliticians(slugs: string[]) {
-  const [cards, maxRaised] = await Promise.all([
+  const [cards, maxRaised, maxOutsideSpending] = await Promise.all([
     Promise.all(slugs.map((slug) => getComparePoliticianCard(slug))),
     getMaxTotalRaised(),
+    getMaxOutsideSpending(),
   ]);
 
   return cards
     .filter((c): c is NonNullable<typeof c> => c !== null)
-    .map((c) => ({ ...c, totalRaisedShare: maxRaised > 0 ? c.politician.totalRaised / maxRaised : 0 }))
+    .map((c) => ({
+      ...c,
+      totalRaisedShare: maxRaised > 0 ? c.politician.totalRaised / maxRaised : 0,
+      outsideSupportShare: maxOutsideSpending > 0 ? c.outsideSupportTotal / maxOutsideSpending : 0,
+      outsideOpposeShare: maxOutsideSpending > 0 ? c.outsideOpposeTotal / maxOutsideSpending : 0,
+    }))
     .sort((a, b) => slugs.indexOf(a.politician.slug) - slugs.indexOf(b.politician.slug));
 }
 

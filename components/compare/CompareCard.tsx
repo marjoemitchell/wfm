@@ -15,6 +15,10 @@ export type CompareCardData = {
   inStatePct: number;
   pacPct: number;
   outOfStatePct: number;
+  outsideSupportTotal: number;
+  outsideOpposeTotal: number;
+  outsideSupportShare: number;
+  outsideOpposeShare: number;
   topSectors: { name: string; amount: number }[];
 };
 
@@ -27,6 +31,10 @@ export default function CompareCard({ data, onRemove }: { data: CompareCardData;
     { label: "In-state", value: percent(data.inStatePct), pct: data.inStatePct, color: "var(--color-accent)" },
     { label: "PAC share", value: percent(data.pacPct), pct: data.pacPct, color: "var(--color-gold)" },
     { label: "Out-of-state", value: percent(data.outOfStatePct), pct: data.outOfStatePct, color: "var(--color-party-d)" },
+    { label: "Super PAC support", value: money(data.outsideSupportTotal), pct: data.outsideSupportShare * 100, color: "var(--color-accent-hover)" },
+    ...(data.outsideOpposeTotal > 0
+      ? [{ label: "Super PAC opposition", value: money(data.outsideOpposeTotal), pct: data.outsideOpposeShare * 100, color: "var(--color-party-n)" }]
+      : []),
   ];
 
   return (
