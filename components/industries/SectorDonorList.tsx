@@ -30,7 +30,9 @@ export default function SectorDonorList({ donors }: { donors: SectorDonor[] }) {
           className="grid w-full grid-cols-[1fr_auto] items-center gap-4 py-4 text-left hover:bg-ground-raised sm:grid-cols-[1.7fr_1fr_0.8fr]"
         >
           <div className="min-w-0">
-            <div className="text-donor-row-name text-ink">{d.name}</div>
+            <div className="truncate text-donor-row-name text-ink" title={d.name}>
+              {d.name}
+            </div>
             {d.employer && <div className="truncate text-[16.2px] text-ink-tertiary">{d.employer}</div>}
             <div className="text-[16.2px] text-ink-tertiary sm:hidden">
               {d.city}, {d.state}
