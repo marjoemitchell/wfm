@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Single entrypoint for all three Railway services in this project (the
-// web app, and the two data-ingestion jobs) so they can all use the same
+// Single entrypoint for all four Railway services in this project (the
+// web app, and the three data-ingestion jobs) so they can all use the same
 // default "start" command and be told apart purely by the SERVICE_ROLE
 // environment variable — no per-service "Custom Start Command" dashboard
 // setting needed. Defaults to "web" so the existing deployment keeps
@@ -12,6 +12,7 @@ const COMMANDS = {
   web: ["npx", ["next", "start"]],
   "ingest-fec": ["npx", ["tsx", "scripts/ingest-fec.ts"]],
   "ingest-copp": ["npx", ["tsx", "scripts/ingest-copp.ts"]],
+  "ingest-copp-ie": ["npx", ["tsx", "scripts/ingest-copp-ie.ts"]],
 };
 
 const role = process.env.SERVICE_ROLE || "web";
