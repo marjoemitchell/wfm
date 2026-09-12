@@ -10,7 +10,8 @@
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev && prisma generate",
     "ingest:fec": "tsx scripts/ingest-fec.ts",
-    "ingest:copp": "tsx scripts/ingest-copp.ts"
+    "ingest:copp": "tsx scripts/ingest-copp.ts",
+    "ingest:copp-ie": "tsx scripts/ingest-copp-ie.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
