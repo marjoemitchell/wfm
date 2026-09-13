@@ -15,8 +15,11 @@ execSync("npx prisma generate", { stdio: "inherit" });
 if (["ingest-copp", "ingest-copp-ie"].includes(process.env.SERVICE_ROLE)) {
   // The apt packages this installs at build time don't carry into
   // Railway's runtime image (Railpack keeps build vs. deploy apt layers
-  // separate) — the copp-ingest service has RAILPACK_DEPLOY_APT_PACKAGES
-  // set with the full Chromium dependency list for that reason.
+  // separate) — the repo's railpack.json declares that same dependency
+  // list under deploy.aptPackages so it lands in the deploy image too.
+  // (A RAILPACK_DEPLOY_APT_PACKAGES service variable looked like the
+  // intended way to do this instead, but it silently had no effect in
+  // practice — a known rough edge, not something specific to this repo.)
   execSync("npx playwright install --with-deps chromium", { stdio: "inherit" });
 }
 
