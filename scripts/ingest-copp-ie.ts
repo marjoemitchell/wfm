@@ -2,7 +2,11 @@
  * Pulls Montana independent-expenditure filings (Committee Finance Report
  * C-6, "Expenditures: Independent" section) from the Commissioner of
  * Political Practices' CERS portal and loads them as `source: MT_COPP`
- * IndependentExpenditure rows.
+ * IndependentExpenditure rows. Also pulls each spending committee's own
+ * "Contributions" schedules (its Individual and Committee donor tables)
+ * from the same reports and loads them as CommitteeFunding rows — this is
+ * what lets a committee's disclosed funding be checked against its
+ * spending later, rather than just recording the spending on its own.
  *
  * This only attaches expenditures to Politicians that ingest-copp.ts has
  * already created (matched by name/office/district parsed out of the
@@ -11,19 +15,22 @@
  * issue rather than a candidate, or naming a candidate we haven't ingested
  * (wrong cycle, local office, etc.), is skipped and counted in the summary.
  *
- * Unlike ingest-copp.ts, this doesn't scrape rendered HTML: the portal's
- * own DataTables grids and report viewer are backed by plain JSON/form
- * endpoints (the same ones the page's own JS calls), and one committee's
- * report can have dozens of line items, so paying for a full page render
- * per lookup isn't worth it here. A single headless page establishes the
- * session cookie; everything after that is `page.request` calls sharing
- * that cookie, no clicking or rendering involved.
+ * Both the independent-expenditure line items and the contribution
+ * schedules come from the same `financeRepDetailList` DataTables JSON
+ * endpoint the page's own JS calls for every schedule on the report,
+ * distinguished only by a `listName` form field ("expendIndependent" for
+ * the one this script already read, "individual" and "committee" for a
+ * committee's own donors) — found by watching the network calls a real
+ * "View Report" click makes, since the portal's search UI never exposes
+ * those listName values itself. All three return the same line-item shape,
+ * so no page rendering is needed for any of it.
  *
  * Usage: npm run ingest:copp-ie
  *
  * Safe to re-run: replaces the *entire* set of MT_COPP independent
- * expenditures on each run (not just per-politician), so a committee that
- * stops showing up in a search no longer leaves stale rows behind.
+ * expenditures and committee funding on each run (not just per-politician
+ * or per-committee), so a committee that stops showing up in a search no
+ * longer leaves stale rows behind.
  */
 import "dotenv/config";
 import { chromium, type Page } from "playwright";
@@ -87,6 +94,46 @@ type IeItem = {
   candidateIssue: string;
 };
 
+// Same line-item shape the "individual" and "committee" listNames return —
+// only entityName/entityAddress and lineItemCompositeDescr are used here.
+// lineItemCompositeDescr is COPP's own label for the row ("Individual
+// Contributions", "Independent Committee Contributions", "Incidental
+// Committee Contributions", etc.) and becomes the funder's type verbatim,
+// never a guess.
+type FundingJsonItem = {
+  totalAmt: number;
+  entityName: string;
+  entityAddress: string;
+  datePaid: number;
+  lineItemCompositeDescr: string;
+};
+
+type FundingItem = {
+  funderName: string;
+  funderCity: string;
+  funderState: string;
+  funderType: string;
+  amount: number;
+  date: Date;
+};
+
+function fundingItemsFromJson(items: FundingJsonItem[]): FundingItem[] {
+  const out: FundingItem[] = [];
+  for (const item of items) {
+    if (!item.totalAmt) continue;
+    const { city, state } = parseCommitteeAddress(item.entityAddress);
+    out.push({
+      funderName: item.entityName?.trim() || "Unknown",
+      funderCity: city,
+      funderState: state,
+      funderType: item.lineItemCompositeDescr?.trim() || "Unknown",
+      amount: item.totalAmt,
+      date: new Date(item.datePaid),
+    });
+  }
+  return out;
+}
+
 async function searchIndependentExpenditureCommittees(page: Page): Promise<CommitteeRow[]> {
   await page.goto(`${BASE}/search/searchCommitteeExpenditures`, { waitUntil: "networkidle" });
   await page.request.post(`${BASE}/searchResults/searchFinancials`, {
@@ -117,7 +164,10 @@ async function searchIndependentExpenditureCommittees(page: Page): Promise<Commi
   );
 }
 
-async function fetchIndependentExpenditureItems(page: Page, committeeId: number): Promise<IeItem[]> {
+async function fetchIndependentExpenditureItems(
+  page: Page,
+  committeeId: number
+): Promise<{ items: IeItem[]; funding: FundingItem[] }> {
   await page.request.post(`${BASE}/publicReportList/retrieveCommitteeReports`, {
     form: { committeeId: String(committeeId), searchType: "", searchPage: "public" },
   });
@@ -137,15 +187,23 @@ async function fetchIndependentExpenditureItems(page: Page, committeeId: number)
   }
 
   const items: IeItem[] = [];
+  const funding: FundingItem[] = [];
   for (const report of c6ByPeriod.values()) {
     await page.request.post(`${BASE}/viewFinanceReport/retrieveReport`, {
       form: { committeeId: String(committeeId), candidateId: "", reportId: String(report.reportId), searchPage: "public" },
     });
-    const res = await page.request.post(`${BASE}/viewFinanceReport/financeRepDetailList`, { form: { listName: "expendIndependent" } });
-    items.push(...((await res.json()) as IeItem[]));
+
+    const [ieRes, individualRes, committeeRes] = await Promise.all([
+      page.request.post(`${BASE}/viewFinanceReport/financeRepDetailList`, { form: { listName: "expendIndependent" } }),
+      page.request.post(`${BASE}/viewFinanceReport/financeRepDetailList`, { form: { listName: "individual" } }),
+      page.request.post(`${BASE}/viewFinanceReport/financeRepDetailList`, { form: { listName: "committee" } }),
+    ]);
+    items.push(...((await ieRes.json()) as IeItem[]));
+    funding.push(...fundingItemsFromJson((await individualRes.json()) as FundingJsonItem[]));
+    funding.push(...fundingItemsFromJson((await committeeRes.json()) as FundingJsonItem[]));
     await sleep(150);
   }
-  return items;
+  return { items, funding };
 }
 
 // Committee mailing addresses come as a single "line1, City, ST ZIP"
@@ -323,6 +381,16 @@ async function main() {
     description: string | null;
     payee: string | null;
   }[] = [];
+  const fundingRows: {
+    committeeId: string;
+    funderName: string;
+    funderCity: string;
+    funderState: string;
+    funderType: string;
+    amount: number;
+    date: Date;
+  }[] = [];
+  const processedDonorIds = new Set<string>();
   let itemCount = 0;
   let noTarget = 0;
   let noTargetAmt = 0;
@@ -337,8 +405,12 @@ async function main() {
     try {
       const donorId = await upsertCommitteeDonor(committee.committeeName, committee.committeeAddress);
       if (!donorId) continue;
+      processedDonorIds.add(donorId);
 
-      const items = await fetchIndependentExpenditureItems(page, committee.committeeId);
+      const { items, funding } = await fetchIndependentExpenditureItems(page, committee.committeeId);
+      for (const f of funding) {
+        fundingRows.push({ committeeId: donorId, ...f });
+      }
       for (const item of items) {
         const totalAmt = item.totalAmt;
         if (!totalAmt) continue;
@@ -397,13 +469,17 @@ async function main() {
   console.log(`  named target not found among ingested candidates: ${noMatch} items, $${noMatchAmt.toFixed(0)}`);
   console.log(`  multi-candidate line item, couldn't verify split: ${unresolvedSplit} items, $${unresolvedSplitAmt.toFixed(0)}`);
   console.log(`  direction unclear (no explicit support/oppose language): ${unclearDirection} of ${rows.length} matched rows, $${unclearDirectionAmt.toFixed(0)}`);
+  console.log(`\nParsed ${fundingRows.length} committee funding rows across ${processedDonorIds.size} committees.`);
 
   await db.$transaction([
     db.independentExpenditure.deleteMany({ where: { politicianId: { in: politicians.map((p) => p.id) } } }),
     ...(rows.length ? [db.independentExpenditure.createMany({ data: rows })] : []),
+    db.committeeFunding.deleteMany({ where: { committeeId: { in: [...processedDonorIds] } } }),
+    ...(fundingRows.length ? [db.committeeFunding.createMany({ data: fundingRows })] : []),
   ]);
 
   console.log(`\nDone. Wrote ${rows.length} independent expenditures across ${new Set(rows.map((r) => r.politicianId)).size} politicians.`);
+  console.log(`Wrote ${fundingRows.length} committee funding rows across ${new Set(fundingRows.map((f) => f.committeeId)).size} committees.`);
   await browser.close();
 }
 
