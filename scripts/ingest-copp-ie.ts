@@ -25,6 +25,16 @@
  * those listName values itself. All three return the same line-item shape,
  * so no page rendering is needed for any of it.
  *
+ * The committee search this starts from only finds committees that filed
+ * an independent expenditure of their own, which misses a pass-through
+ * funder — a committee (or out-of-state group, if it's registered here at
+ * all) that gives money to an independent-expenditure spender but never
+ * makes one itself. So every committee visited here also has its own
+ * "committee"-listName funders searched for by name and, if found, queued
+ * to visit in turn — a bounded BFS over the funding graph, not a fixed
+ * list, guarded by a visited-committee set (stops cycles) and a
+ * safety-valve cap (stops runaway fan-out; not expected to be hit).
+ *
  * Usage: npm run ingest:copp-ie
  *
  * Safe to re-run: replaces the *entire* set of MT_COPP independent
@@ -164,10 +174,55 @@ async function searchIndependentExpenditureCommittees(page: Page): Promise<Commi
   );
 }
 
+// Finds a committee by name — this is how a committee that funds an
+// independent-expenditure spender but never makes one itself (Sixteen
+// Thirty Fund funding a Montana PAC, say) gets discovered, since it would
+// never turn up in searchIndependentExpenditureCommittees above.
+//
+// This is the same searchFinancials/EXPEND/COMMITTEE search that function
+// uses, just with independentExpendSearch turned off and a name filled
+// in, *not* the portal's own plain "Committee Search" tab — that one
+// turned out to silently exclude Incidental-type committees entirely
+// (confirmed live: it returns zero results for "Sixteen Thirty Fund" even
+// though the committee demonstrably exists), which is exactly the
+// registration type most of the committees this is trying to catch use.
+// The expenditure search catches it because "Incidental" committees still
+// show up there for any expenditure they've made — including the
+// "expendOther" contribution transferring money onward to whatever they
+// actually fund, which is the reason this search needs to run at all.
+async function searchCommitteesByName(page: Page, name: string): Promise<CommitteeRow[]> {
+  await page.request.post(`${BASE}/searchResults/searchFinancials`, {
+    form: {
+      independentExpendSearch: "false",
+      electioneeringCommSearch: "false",
+      financialSearchType: "EXPEND",
+      expendSearchTypeCode: "COMMITTEE",
+      expendCanLastName: "",
+      expendCanFirstName: "",
+      expendCommitteeName: name,
+      payeeLastName: "",
+      payeeFirstName: "",
+      expendPartyCode: "",
+      expendCandidateTypeCode: "",
+      expendOfficeCode: "",
+      expendAmountRangeCode: "",
+      electionYear: "",
+      expendSearchFromDate: "",
+      expendSearchToDate: "",
+    },
+  });
+  return fetchAllRows<CommitteeRow>(
+    page,
+    `${BASE}/searchResults/listFinancialCommitteeResults`,
+    ["checked", "committeeName", "electionYear", "committeeTypeDescr"],
+    100
+  );
+}
+
 async function fetchIndependentExpenditureItems(
   page: Page,
   committeeId: number
-): Promise<{ items: IeItem[]; funding: FundingItem[] }> {
+): Promise<{ items: IeItem[]; funding: FundingItem[]; committeeFunderNames: string[] }> {
   await page.request.post(`${BASE}/publicReportList/retrieveCommitteeReports`, {
     form: { committeeId: String(committeeId), searchType: "", searchPage: "public" },
   });
@@ -188,6 +243,7 @@ async function fetchIndependentExpenditureItems(
 
   const items: IeItem[] = [];
   const funding: FundingItem[] = [];
+  const committeeFunderNames: string[] = [];
   for (const report of c6ByPeriod.values()) {
     await page.request.post(`${BASE}/viewFinanceReport/retrieveReport`, {
       form: { committeeId: String(committeeId), candidateId: "", reportId: String(report.reportId), searchPage: "public" },
@@ -200,10 +256,17 @@ async function fetchIndependentExpenditureItems(
     ]);
     items.push(...((await ieRes.json()) as IeItem[]));
     funding.push(...fundingItemsFromJson((await individualRes.json()) as FundingJsonItem[]));
-    funding.push(...fundingItemsFromJson((await committeeRes.json()) as FundingJsonItem[]));
+    const committeeFunders = (await committeeRes.json()) as FundingJsonItem[];
+    funding.push(...fundingItemsFromJson(committeeFunders));
+    // Names only, for the caller to chase down as committees in their own
+    // right (see searchCommitteesByName) — kept separate from `funding`
+    // itself since not every name here will resolve to an MT committee
+    // (an out-of-state PAC that gave here without ever registering or
+    // spending independently in Montana itself, say).
+    committeeFunderNames.push(...committeeFunders.filter((c) => c.totalAmt).map((c) => c.entityName?.trim()).filter((n): n is string => !!n));
     await sleep(150);
   }
-  return { items, funding };
+  return { items, funding, committeeFunderNames };
 }
 
 // Committee mailing addresses come as a single "line1, City, ST ZIP"
@@ -400,17 +463,49 @@ async function main() {
   let unresolvedSplitAmt = 0;
   let unclearDirection = 0;
   let unclearDirectionAmt = 0;
+  let discoveredCount = 0;
 
-  for (const [i, committee] of committees.entries()) {
+  // A committee queue rather than a fixed list: a committee's own
+  // "committee"-listName funders can name a committee that never itself
+  // filed an independent expenditure (a pass-through funder like Sixteen
+  // Thirty Fund giving to a Montana PAC that then spends against a
+  // candidate) — searchIndependentExpenditureCommittees above would never
+  // surface that funder on its own, so each committee processed here can
+  // enqueue more. visitedCommitteeIds stops a funding cycle between two
+  // committees from looping forever; MAX_COMMITTEES is a safety valve
+  // against runaway fan-out, not a number this is expected to hit.
+  const queue: CommitteeRow[] = [...committees];
+  const visitedCommitteeIds = new Set<number>(committees.map((c) => c.committeeId));
+  const searchedFunderNames = new Set<string>();
+  const MAX_COMMITTEES = 2000;
+  let processedCount = 0;
+
+  while (queue.length > 0 && processedCount < MAX_COMMITTEES) {
+    const committee = queue.shift()!;
+    processedCount++;
+    if (processedCount > committees.length) discoveredCount++;
     try {
       const donorId = await upsertCommitteeDonor(committee.committeeName, committee.committeeAddress);
       if (!donorId) continue;
       processedDonorIds.add(donorId);
 
-      const { items, funding } = await fetchIndependentExpenditureItems(page, committee.committeeId);
+      const { items, funding, committeeFunderNames } = await fetchIndependentExpenditureItems(page, committee.committeeId);
       for (const f of funding) {
         fundingRows.push({ committeeId: donorId, ...f });
       }
+
+      for (const name of committeeFunderNames) {
+        const key = name.toLowerCase();
+        if (searchedFunderNames.has(key)) continue;
+        searchedFunderNames.add(key);
+        const found = await searchCommitteesByName(page, name);
+        for (const f of found) {
+          if (visitedCommitteeIds.has(f.committeeId)) continue;
+          visitedCommitteeIds.add(f.committeeId);
+          queue.push(f);
+        }
+      }
+
       for (const item of items) {
         const totalAmt = item.totalAmt;
         if (!totalAmt) continue;
@@ -461,7 +556,10 @@ async function main() {
     } catch (err) {
       console.error(`  ${committee.committeeName} failed:`, err);
     }
-    if ((i + 1) % 25 === 0) console.log(`  ...${i + 1}/${committees.length} committees checked`);
+    if (processedCount % 25 === 0) console.log(`  ...${processedCount} committees checked (${queue.length} queued)`);
+  }
+  if (queue.length > 0) {
+    console.warn(`Stopped at the ${MAX_COMMITTEES}-committee safety cap with ${queue.length} discovered committees still unvisited.`);
   }
 
   console.log(`\nParsed ${itemCount} independent-expenditure line items.`);
@@ -469,7 +567,7 @@ async function main() {
   console.log(`  named target not found among ingested candidates: ${noMatch} items, $${noMatchAmt.toFixed(0)}`);
   console.log(`  multi-candidate line item, couldn't verify split: ${unresolvedSplit} items, $${unresolvedSplitAmt.toFixed(0)}`);
   console.log(`  direction unclear (no explicit support/oppose language): ${unclearDirection} of ${rows.length} matched rows, $${unclearDirectionAmt.toFixed(0)}`);
-  console.log(`\nParsed ${fundingRows.length} committee funding rows across ${processedDonorIds.size} committees.`);
+  console.log(`\nParsed ${fundingRows.length} committee funding rows across ${processedDonorIds.size} committees (${discoveredCount} discovered as pass-through funders, not from the independent-expenditure search).`);
 
   await db.$transaction([
     db.independentExpenditure.deleteMany({ where: { politicianId: { in: politicians.map((p) => p.id) } } }),
