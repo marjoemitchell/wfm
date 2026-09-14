@@ -30,7 +30,7 @@ type DonorDetail = {
       politician: { slug: string; name: string; office: string; party: Party };
       amount: number;
       date: string;
-      support: boolean;
+      support: boolean | null;
       description: string | null;
     }[];
   };
@@ -185,7 +185,8 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
                     <div className="min-w-0">
                       <div className="truncate text-[18.6px] text-ink">{r.politician.name}</div>
                       <div className="truncate text-[14.4px] text-ink-tertiary">
-                        {r.support ? "Supporting" : "Opposing"} · {formatDate(r.date)}
+                        {r.support !== null ? (r.support ? "Supporting" : "Opposing") + " · " : ""}
+                        {formatDate(r.date)}
                       </div>
                     </div>
                     <div className="text-right text-[18px] tabular-nums text-ink">{money(r.amount)}</div>

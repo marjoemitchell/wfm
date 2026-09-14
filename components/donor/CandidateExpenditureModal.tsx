@@ -9,7 +9,7 @@ import type { Party } from "@/lib/generated/prisma/enums";
 export type CandidateExpenditureItem = {
   amount: number;
   date: Date;
-  support: boolean;
+  support: boolean | null;
   description: string | null;
   payee: string | null;
 };
@@ -18,6 +18,7 @@ export type CandidateExpenditureSummary = {
   politician: { slug: string; name: string; office: string; party: Party };
   supportTotal: number;
   opposeTotal: number;
+  unclearTotal: number;
   items: CandidateExpenditureItem[];
 };
 
@@ -93,15 +94,25 @@ export default function CandidateExpenditureModal({
               <div className="text-eyebrow mt-1 text-ink-tertiary">Opposing</div>
             </div>
           )}
+          {summary.unclearTotal > 0 && (
+            <div>
+              <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 31 }}>
+                {money(summary.unclearTotal)}
+              </div>
+              <div className="text-eyebrow mt-1 text-ink-tertiary">Spent, direction unclear</div>
+            </div>
+          )}
         </div>
 
         <div className="mt-5">
           {summary.items.map((item, i) => (
             <div key={i} className="grid grid-cols-[1fr_auto] items-start gap-4 border-b border-rule-faint py-3">
               <div className="min-w-0">
-                <div className="text-[13.2px] uppercase text-ink-quiet" style={{ letterSpacing: "0.1em" }}>
-                  {item.support ? "Supporting" : "Opposing"}
-                </div>
+                {item.support !== null && (
+                  <div className="text-[13.2px] uppercase text-ink-quiet" style={{ letterSpacing: "0.1em" }}>
+                    {item.support ? "Supporting" : "Opposing"}
+                  </div>
+                )}
                 <div className="mt-1 text-[16.2px] text-ink-secondary">
                   {item.description ?? "Independent expenditure"}
                   {item.payee ? ` · Paid to ${item.payee}` : ""}

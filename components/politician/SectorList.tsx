@@ -16,7 +16,7 @@ export default function SectorList({
   sectors: { name: string; amount: number; share: number }[];
   politicianSlug: string;
   politicianName: string;
-  outsideSpending: { supportTotal: number; opposeTotal: number; spenders: OutsideSpender[] };
+  outsideSpending: { supportTotal: number; opposeTotal: number; unclearTotal: number; spenders: OutsideSpender[] };
 }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [outsideOpen, setOutsideOpen] = useState(false);

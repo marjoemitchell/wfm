@@ -4,7 +4,15 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { money } from "@/lib/format";
 
-export type OutsideSpender = { slug: string; name: string; city: string; state: string; support: number; oppose: number };
+export type OutsideSpender = {
+  slug: string;
+  name: string;
+  city: string;
+  state: string;
+  support: number;
+  oppose: number;
+  unclear: number;
+};
 
 export default function OutsideSpendingModal({
   politicianSlug,
@@ -15,7 +23,7 @@ export default function OutsideSpendingModal({
 }: {
   politicianSlug: string;
   politicianName: string;
-  outsideSpending: { supportTotal: number; opposeTotal: number; spenders: OutsideSpender[] };
+  outsideSpending: { supportTotal: number; opposeTotal: number; unclearTotal: number; spenders: OutsideSpender[] };
   open: boolean;
   onClose: () => void;
 }) {
@@ -76,6 +84,14 @@ export default function OutsideSpendingModal({
               <div className="text-eyebrow mt-1 text-ink-tertiary">Opposing</div>
             </div>
           )}
+          {outsideSpending.unclearTotal > 0 && (
+            <div>
+              <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 31 }}>
+                {money(outsideSpending.unclearTotal)}
+              </div>
+              <div className="text-eyebrow mt-1 text-ink-tertiary">Spent, direction unclear</div>
+            </div>
+          )}
         </div>
 
         <div className="mt-5">
@@ -94,6 +110,7 @@ export default function OutsideSpendingModal({
               <div className="shrink-0 text-right text-[18px] tabular-nums text-ink">
                 {s.support > 0 && <div>{money(s.support)} for</div>}
                 {s.oppose > 0 && <div>{money(s.oppose)} against</div>}
+                {s.unclear > 0 && <div>{money(s.unclear)} spent</div>}
               </div>
             </Link>
           ))}

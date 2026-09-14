@@ -314,8 +314,15 @@ async function main() {
     select: { id: true, name: true, office: true, level: true },
   });
 
-  const rows: { politicianId: string; donorId: string; amount: number; date: Date; support: boolean; description: string | null; payee: string | null }[] =
-    [];
+  const rows: {
+    politicianId: string;
+    donorId: string;
+    amount: number;
+    date: Date;
+    support: boolean | null;
+    description: string | null;
+    payee: string | null;
+  }[] = [];
   let itemCount = 0;
   let noTarget = 0;
   let noTargetAmt = 0;
@@ -323,7 +330,8 @@ async function main() {
   let noMatchAmt = 0;
   let unresolvedSplit = 0;
   let unresolvedSplitAmt = 0;
-  let impliedSupport = 0;
+  let unclearDirection = 0;
+  let unclearDirectionAmt = 0;
 
   for (const [i, committee] of committees.entries()) {
     try {
@@ -359,13 +367,20 @@ async function main() {
             continue;
           }
           const { support, explicit } = inferSupport(part.text);
-          if (!explicit) impliedSupport++;
+          if (!explicit) {
+            unclearDirection++;
+            unclearDirectionAmt += part.amount;
+          }
           rows.push({
             politicianId: politician.id,
             donorId,
             amount: part.amount,
             date: new Date(item.datePaid),
-            support,
+            // Only store a direction we actually found language for; a
+            // guess with no real signal is worse than admitting we don't
+            // know (see inferSupport's own comment for why keyword
+            // detection alone can't be trusted further than this).
+            support: explicit ? support : null,
             description: item.purposeDescr?.trim() || null,
             payee: item.entityName?.trim() || null,
           });
@@ -381,7 +396,7 @@ async function main() {
   console.log(`  no candidate/issue named: ${noTarget} items, $${noTargetAmt.toFixed(0)}`);
   console.log(`  named target not found among ingested candidates: ${noMatch} items, $${noMatchAmt.toFixed(0)}`);
   console.log(`  multi-candidate line item, couldn't verify split: ${unresolvedSplit} items, $${unresolvedSplitAmt.toFixed(0)}`);
-  console.log(`  support/oppose defaulted to support (no explicit keyword): ${impliedSupport} of ${rows.length} matched rows`);
+  console.log(`  direction unclear (no explicit support/oppose language): ${unclearDirection} of ${rows.length} matched rows, $${unclearDirectionAmt.toFixed(0)}`);
 
   await db.$transaction([
     db.independentExpenditure.deleteMany({ where: { politicianId: { in: politicians.map((p) => p.id) } } }),

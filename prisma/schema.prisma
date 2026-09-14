@@ -104,7 +104,10 @@ model IndependentExpenditure {
   donorId      String
   amount       Decimal    @db.Decimal(12, 2)
   date         DateTime
-  support      Boolean
+  // null = the filing never clearly said support or oppose (only possible
+  // for MT_COPP rows, whose source filings have no structured indicator
+  // and are read from free text; FEC always reports this explicitly).
+  support      Boolean?
   description  String?
   payee        String?
   politician   Politician @relation(fields: [politicianId], references: [id], onDelete: Cascade)

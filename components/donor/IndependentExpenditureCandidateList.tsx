@@ -13,7 +13,7 @@ export type IndependentExpenditureRow = {
   politician: { slug: string; name: string; office: string; party: Party };
   amount: number;
   date: Date;
-  support: boolean;
+  support: boolean | null;
   description: string | null;
   payee: string | null;
 };
@@ -38,20 +38,23 @@ export default function IndependentExpenditureCandidateList({
     };
     const existing = bySlug.get(r.politician.slug);
     if (existing) {
-      if (r.support) existing.supportTotal += r.amount;
-      else existing.opposeTotal += r.amount;
+      if (r.support === true) existing.supportTotal += r.amount;
+      else if (r.support === false) existing.opposeTotal += r.amount;
+      else existing.unclearTotal += r.amount;
       existing.items.push(item);
     } else {
       bySlug.set(r.politician.slug, {
         politician: r.politician,
-        supportTotal: r.support ? r.amount : 0,
-        opposeTotal: r.support ? 0 : r.amount,
+        supportTotal: r.support === true ? r.amount : 0,
+        opposeTotal: r.support === false ? r.amount : 0,
+        unclearTotal: r.support === null ? r.amount : 0,
         items: [item],
       });
     }
   }
   const candidates = [...bySlug.values()].sort(
-    (a, b) => b.supportTotal + b.opposeTotal - (a.supportTotal + a.opposeTotal)
+    (a, b) =>
+      b.supportTotal + b.opposeTotal + b.unclearTotal - (a.supportTotal + a.opposeTotal + a.unclearTotal)
   );
   const selected = selectedSlug ? (bySlug.get(selectedSlug) ?? null) : null;
 
@@ -80,6 +83,7 @@ export default function IndependentExpenditureCandidateList({
           <div className="text-right">
             {c.supportTotal > 0 && <div className="text-recipient-name tabular-nums text-ink">{money(c.supportTotal)} for</div>}
             {c.opposeTotal > 0 && <div className="text-recipient-name tabular-nums text-ink">{money(c.opposeTotal)} against</div>}
+            {c.unclearTotal > 0 && <div className="text-recipient-name tabular-nums text-ink">{money(c.unclearTotal)} spent</div>}
           </div>
         </button>
       ))}

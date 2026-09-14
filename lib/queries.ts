@@ -197,27 +197,36 @@ export async function getPoliticianBySlug(slug: string) {
 
   let supportTotal = 0;
   let opposeTotal = 0;
-  const bySpender = new Map<string, { slug: string; name: string; city: string; state: string; support: number; oppose: number }>();
+  let unclearTotal = 0;
+  const bySpender = new Map<
+    string,
+    { slug: string; name: string; city: string; state: string; support: number; oppose: number; unclear: number }
+  >();
   for (const ie of independentExpenditures) {
     const amt = toNumber(ie.amount);
-    if (ie.support) supportTotal += amt;
-    else opposeTotal += amt;
+    if (ie.support === true) supportTotal += amt;
+    else if (ie.support === false) opposeTotal += amt;
+    else unclearTotal += amt;
     const existing = bySpender.get(ie.donor.id);
     if (existing) {
-      if (ie.support) existing.support += amt;
-      else existing.oppose += amt;
+      if (ie.support === true) existing.support += amt;
+      else if (ie.support === false) existing.oppose += amt;
+      else existing.unclear += amt;
     } else {
       bySpender.set(ie.donor.id, {
         slug: ie.donor.slug,
         name: ie.donor.name,
         city: ie.donor.city,
         state: ie.donor.state,
-        support: ie.support ? amt : 0,
-        oppose: ie.support ? 0 : amt,
+        support: ie.support === true ? amt : 0,
+        oppose: ie.support === false ? amt : 0,
+        unclear: ie.support === null ? amt : 0,
       });
     }
   }
-  const outsideSpenders = [...bySpender.values()].sort((a, b) => b.support + b.oppose - (a.support + a.oppose));
+  const outsideSpenders = [...bySpender.values()].sort(
+    (a, b) => b.support + b.oppose + b.unclear - (a.support + a.oppose + a.unclear)
+  );
 
   return {
     politician: { ...politician, totalRaised: toNumber(politician.totalRaised), cashOnHand: toNumber(politician.cashOnHand) },
@@ -226,7 +235,7 @@ export async function getPoliticianBySlug(slug: string) {
     hasItemizedContributions: itemizedTotal > 0,
     sectors,
     topDonors,
-    outsideSpending: { supportTotal, opposeTotal, spenders: outsideSpenders },
+    outsideSpending: { supportTotal, opposeTotal, unclearTotal, spenders: outsideSpenders },
   };
 }
 
@@ -534,8 +543,11 @@ const getComparePoliticianCard = unstable_cache(
     let outsideOpposeTotal = 0;
     for (const row of outsideAgg) {
       const amt = toNumber(row._sum.amount ?? 0);
-      if (row.support) outsideSupportTotal = amt;
-      else outsideOpposeTotal = amt;
+      // A null-direction group (unclear from the source filing) has
+      // nowhere to go on this compact card, so it's left out of both
+      // totals rather than folded into "oppose".
+      if (row.support === true) outsideSupportTotal = amt;
+      else if (row.support === false) outsideOpposeTotal = amt;
     }
 
     return {
