@@ -21,9 +21,15 @@ export type IndependentExpenditureRow = {
 export default function IndependentExpenditureCandidateList({
   donorName,
   rows,
+  total,
+  candidateCount,
+  showTotal,
 }: {
   donorName: string;
   rows: IndependentExpenditureRow[];
+  total?: number;
+  candidateCount?: number;
+  showTotal?: boolean;
 }) {
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
 
@@ -62,6 +68,11 @@ export default function IndependentExpenditureCandidateList({
     <div>
       <div className="border-b border-rule pb-3 text-eyebrow text-ink-quiet">Independent expenditures</div>
       <p className="mt-2 max-w-[640px] text-[16.2px] text-ink-tertiary">
+        {showTotal && total !== undefined && candidateCount !== undefined && (
+          <>
+            {money(total)} spent independently on {candidateCount} candidate{candidateCount === 1 ? "" : "s"}.{" "}
+          </>
+        )}
         Money spent supporting or opposing a candidate, paid directly to vendors rather than given to their
         campaign. By law, an independent-expenditure committee can&apos;t coordinate with or donate to the
         candidates it spends on.

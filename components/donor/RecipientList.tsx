@@ -9,10 +9,25 @@ export type Recipient = {
   date: Date;
 };
 
-export default function RecipientList({ rows }: { rows: Recipient[] }) {
+export default function RecipientList({
+  rows,
+  total,
+  recipientCount,
+  showTotal,
+}: {
+  rows: Recipient[];
+  total?: number;
+  recipientCount?: number;
+  showTotal?: boolean;
+}) {
   return (
     <div>
       <div className="border-b border-rule pb-3 text-eyebrow text-ink-quiet">Who they fund</div>
+      {showTotal && total !== undefined && recipientCount !== undefined && (
+        <p className="mt-2 text-[16.2px] text-ink-secondary">
+          {money(total)} given directly to {recipientCount} candidate{recipientCount === 1 ? "" : "s"}.
+        </p>
+      )}
       {rows.map((r, i) => (
         <Link
           // A donor can make several separate contributions to the same

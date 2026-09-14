@@ -25,12 +25,16 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
   // Montana COPP's "Independent" committee type) that gives up direct
   // giving in exchange for unlimited independent spending — an ordinary
   // PAC, federal or state, can do both, subject to contribution limits on
-  // the direct side. So each gets its own headline stat pair rather than
-  // one crowding out or being combined with the other; a donor that's
-  // genuinely independent-only just never has a direct-giving pair to
-  // show.
+  // the direct side.
   const hasDirect = rows.length > 0;
   const hasIndependent = independentExpenditures.rows.length > 0;
+  // A donor doing both gets no headline stat at all: any single number up
+  // top next to the donor's name reads as *the* total for the page, and
+  // there is no single total here — these two categories don't sum to
+  // anything meaningful. Each one instead gets its dollar figure woven
+  // directly into its own section's own description below, where it can't
+  // be mistaken for anything but what it is.
+  const isMixed = hasDirect && hasIndependent;
 
   return (
     <div>
@@ -75,32 +79,34 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
             </p>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          {hasDirect && (
-            <>
-              <div>
-                <div className="text-stat-secondary text-ink">{money(totalGiven)}</div>
-                <div className="text-eyebrow mt-2 text-ink-tertiary">Total given</div>
-              </div>
-              <div>
-                <div className="text-stat-secondary text-ink">{recipients}</div>
-                <div className="text-eyebrow mt-2 text-ink-tertiary">Recipients</div>
-              </div>
-            </>
-          )}
-          {hasIndependent && (
-            <>
-              <div>
-                <div className="text-stat-secondary text-ink">{money(independentExpenditures.total)}</div>
-                <div className="text-eyebrow mt-2 text-ink-tertiary">Spent independently</div>
-              </div>
-              <div>
-                <div className="text-stat-secondary text-ink">{independentExpenditures.recipients}</div>
-                <div className="text-eyebrow mt-2 text-ink-tertiary">Candidates</div>
-              </div>
-            </>
-          )}
-        </div>
+        {!isMixed && (
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            {hasDirect && (
+              <>
+                <div>
+                  <div className="text-stat-secondary text-ink">{money(totalGiven)}</div>
+                  <div className="text-eyebrow mt-2 text-ink-tertiary">Total given</div>
+                </div>
+                <div>
+                  <div className="text-stat-secondary text-ink">{recipients}</div>
+                  <div className="text-eyebrow mt-2 text-ink-tertiary">Recipients</div>
+                </div>
+              </>
+            )}
+            {hasIndependent && (
+              <>
+                <div>
+                  <div className="text-stat-secondary text-ink">{money(independentExpenditures.total)}</div>
+                  <div className="text-eyebrow mt-2 text-ink-tertiary">Spent independently</div>
+                </div>
+                <div>
+                  <div className="text-stat-secondary text-ink">{independentExpenditures.recipients}</div>
+                  <div className="text-eyebrow mt-2 text-ink-tertiary">Candidates</div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {donor.jfcParticipants && Array.isArray(donor.jfcParticipants) && donor.jfcParticipants.length > 0 && (
@@ -121,12 +127,18 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
 
       {hasDirect && (
         <div className="pt-9">
-          <RecipientList rows={rows} />
+          <RecipientList rows={rows} total={totalGiven} recipientCount={recipients} showTotal={isMixed} />
         </div>
       )}
       {hasIndependent && (
         <div className="pt-9">
-          <IndependentExpenditureCandidateList donorName={donor.name} rows={independentExpenditures.rows} />
+          <IndependentExpenditureCandidateList
+            donorName={donor.name}
+            rows={independentExpenditures.rows}
+            total={independentExpenditures.total}
+            candidateCount={independentExpenditures.recipients}
+            showTotal={isMixed}
+          />
         </div>
       )}
     </div>
