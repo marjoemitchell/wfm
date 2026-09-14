@@ -58,7 +58,7 @@ model Donor {
   state                String
   sector               String
   // Populated best-effort for FEC-sourced PAC/committee donors from FEC's
-  // own /committee/{id} record — never inferred or written by us, so a
+  // own /committee/{id} record: never inferred or written by us, so a
   // null value here just means we haven't looked it up (yet), not that
   // there's nothing to know.
   fecCommitteeId       String?
@@ -68,7 +68,7 @@ model Donor {
   registeredSince      DateTime?
   // For joint fundraising committees only: the other committees that share
   // in its proceeds, derived from its own Schedule B transfer disbursements
-  // (never inferred) — an array of { committeeId, name, amount }.
+  // (never inferred): an array of { committeeId, name, amount }.
   jfcParticipants      Json?
   contributions        Contribution[]
   independentExpenditures IndependentExpenditure[]
@@ -94,9 +94,9 @@ model Contribution {
 }
 
 // Money a Super PAC (or other "independent expenditure-only" committee)
-// spends supporting or opposing a candidate — legally distinct from a
+// spends supporting or opposing a candidate; legally distinct from a
 // Contribution: this money is never given to the candidate's own
-// committee (that's the whole point of "independent" — no coordination),
+// committee (that's the whole point of "independent": no coordination),
 // it's paid directly to a vendor (ad buys, mailers, etc.) on the
 // candidate's behalf. Sourced from FEC Schedule E, not Schedule A.
 model IndependentExpenditure {
@@ -119,12 +119,12 @@ model IndependentExpenditure {
 }
 
 // Money a committee itself received, read off its own C-6 report's
-// "Contributions" schedules (MT_COPP only — read straight from the
+// "Contributions" schedules (MT_COPP only, read straight from the
 // portal's Individual and Committee contributor tables, never inferred).
 // This is what lets a committee's spending be checked against its
 // disclosed funding: a committee with independent expenditures but no
 // CommitteeFunding rows to cover them is exactly what dark money looks
-// like from the outside — COPP recorded where the money went but never
+// like from the outside: COPP recorded where the money went but never
 // where it came from.
 model CommitteeFunding {
   id          String   @id @default(cuid())
@@ -133,7 +133,7 @@ model CommitteeFunding {
   funderCity  String
   funderState String
   // "Individual", or the committee-type label COPP itself gives the
-  // contributing committee (e.g. "Incidental Committee Contributions") —
+  // contributing committee (e.g. "Incidental Committee Contributions"):
   // read straight off the report's own column, never a guess.
   funderType  String
   amount      Decimal  @db.Decimal(12, 2)

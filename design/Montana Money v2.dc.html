@@ -261,7 +261,7 @@
               <div style="display: flex; height: 3px; background: #26272B">
                 <div style="height: 3px; background: #E4322B; width: {{ ind.w }}"></div>
               </div>
-              <div style="font-size: 11.5px; color: #9B9A90; margin-top: 10px">Top recipient — {{ ind.top }}</div>
+              <div style="font-size: 11.5px; color: #9B9A90; margin-top: 10px">Top recipient: {{ ind.top }}</div>
             </div>
             <div style="text-align: right">
               <div style="font-size: 17px; font-variant-numeric: tabular-nums">{{ ind.amtFmt }}</div>
@@ -380,14 +380,14 @@
 
   <footer style="padding: 40px 40px 0 40px">
     <div style="max-width: 1320px; margin: 0 auto; border-top: 1px solid #232427; padding-top: 20px; display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; font-size: 11px; letter-spacing: 0.08em; color: #8A897F">
-      <div>Montana Money — prototype</div>
+      <div>Montana Money: prototype</div>
       <div>{{ disclaimer }}</div>
     </div>
   </footer>
 </div>
 
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;disclaimer&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Illustrative sample figures for design review — not actual filing data.&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Content&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;disclaimer&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Illustrative sample figures for design review, not actual filing data.&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Content&quot;}}">
 const P = {
   R: { ink: '#F08A7E', label: 'Republican', short: 'Rep' },
   D: { ink: '#8FB6E8', label: 'Democrat', short: 'Dem' },
@@ -500,7 +500,7 @@ class Component extends DCLogic {
     const indDonorCount = (name) => DONORS.filter(d => d.sector === name).length;
 
     const vals = {
-      disclaimer: this.props.disclaimer ?? 'Illustrative sample figures for design review — not actual filing data.',
+      disclaimer: this.props.disclaimer ?? 'Illustrative sample figures for design review, not actual filing data.',
       query: s.query,
       onQuery: (e) => this.setState({ query: e.target.value }),
       trackedTotalFmt: fmt(trackedTotal),

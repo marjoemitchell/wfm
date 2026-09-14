@@ -1,15 +1,15 @@
 # Who Funds Montana
 
-A public tracker for Montana officeholders' campaign donors — who funds them, in-state vs. out-of-state, PACs vs. individuals, and industry breakdowns. Built with Next.js (App Router), Prisma/Postgres, and Tailwind.
+A public tracker for Montana officeholders' campaign donors: who funds them, in-state vs. out-of-state, PACs vs. individuals, and industry breakdowns. Built with Next.js (App Router), Prisma/Postgres, and Tailwind.
 
 The original design brief and prototypes this was built from live in [`design/`](design/README.md).
 
 ## Setup
 
 1. Copy `.env.example` to `.env` and fill in:
-   - `DATABASE_URL` — a Postgres connection string (Railway, or any Postgres instance).
-   - `FEC_API_KEY` — an OpenFEC key from [api.data.gov/signup](https://api.data.gov/signup) (or leave as `DEMO_KEY` for light testing).
-   - `FEC_CYCLE` — the two-year election cycle to track (e.g. `2026`).
+   - `DATABASE_URL`: a Postgres connection string (Railway, or any Postgres instance).
+   - `FEC_API_KEY`: an OpenFEC key from [api.data.gov/signup](https://api.data.gov/signup) (or leave as `DEMO_KEY` for light testing).
+   - `FEC_CYCLE`: the two-year election cycle to track (e.g. `2026`).
 2. Install dependencies and set up the database:
    ```bash
    npm install
@@ -20,17 +20,17 @@ The original design brief and prototypes this was built from live in [`design/`]
 
 ## Data sources
 
-- **Federal** (US Senate, US House) — real data from the [OpenFEC API](https://api.open.fec.gov/developers/), pulled by `scripts/ingest-fec.ts`. Re-running `npm run ingest:fec` refreshes it.
-- **Statewide, Legislature, Judicial** — not yet integrated. Montana's COPP has no public API (only a form-based search portal), so this needs a real scraping/ingestion approach rather than a simple API client. No placeholder data is seeded for these — the roster only shows what's real.
-- **Industry/sector classification** is a keyword heuristic (`scripts/sector-crosswalk.ts`), not a real employer crosswalk — see the comment there.
+- **Federal** (US Senate, US House): real data from the [OpenFEC API](https://api.open.fec.gov/developers/), pulled by `scripts/ingest-fec.ts`. Re-running `npm run ingest:fec` refreshes it.
+- **Statewide, Legislature, Judicial**: not yet integrated. Montana's COPP has no public API (only a form-based search portal), so this needs a real scraping/ingestion approach rather than a simple API client. No placeholder data is seeded for these; the roster only shows what's real.
+- **Industry/sector classification** is a keyword heuristic (`scripts/sector-crosswalk.ts`), not a real employer crosswalk; see the comment there.
 
 ## Project structure
 
-- `app/` — routes: roster (`/`), officeholder/donor detail, industries, compare, donor geography (map).
-- `lib/queries.ts` — all data access and aggregation (sector breakdowns, in-state %, industry totals, map data).
-- `lib/montana-geo.ts` / `lib/map-layout.ts` — the donor-geography map's real Montana boundary (via `us-atlas` + `d3-geo`) and label-collision layout.
-- `prisma/schema.prisma` — Politician / Donor / Contribution.
-- `scripts/ingest-fec.ts` — FEC ingestion (safe to re-run; replaces each candidate's contributions).
+- `app/`: routes: roster (`/`), officeholder/donor detail, industries, compare, donor geography (map).
+- `lib/queries.ts`: all data access and aggregation (sector breakdowns, in-state %, industry totals, map data).
+- `lib/montana-geo.ts` / `lib/map-layout.ts`: the donor-geography map's real Montana boundary (via `us-atlas` + `d3-geo`) and label-collision layout.
+- `prisma/schema.prisma`: Politician / Donor / Contribution.
+- `scripts/ingest-fec.ts`: FEC ingestion (safe to re-run; replaces each candidate's contributions).
 
 ## Useful commands
 

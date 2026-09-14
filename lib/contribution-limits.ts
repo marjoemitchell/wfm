@@ -142,7 +142,7 @@ export const STATE_NOTES: { id?: string; title: string; body: string }[] = [
   {
     id: "dark-money",
     title: "Dark money moves through \"incidental\" committees",
-    body: "A nonprofit whose main purpose isn't political can register with the COPP as an incidental committee to spend on Montana races. It only has to itemize money it received specifically as a campaign contribution — the general donations that fund it, which federal law already lets it keep anonymous, don't count and never appear. A committee can show tens of thousands of dollars in spending here against zero dollars in contributions on record.",
+    body: "A nonprofit whose main purpose isn't political can register with the COPP as an incidental committee to spend on Montana races. It only has to itemize money it received specifically as a campaign contribution: the general donations that fund it, which federal law already lets it keep anonymous, don't count and never appear. A committee can show tens of thousands of dollars in spending here against zero dollars in contributions on record.",
   },
 ];
 

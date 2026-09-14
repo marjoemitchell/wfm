@@ -4,13 +4,13 @@
  * Political Practices' CERS portal and loads them as `source: MT_COPP`
  * IndependentExpenditure rows. Also pulls each spending committee's own
  * "Contributions" schedules (its Individual and Committee donor tables)
- * from the same reports and loads them as CommitteeFunding rows — this is
+ * from the same reports and loads them as CommitteeFunding rows: this is
  * what lets a committee's disclosed funding be checked against its
  * spending later, rather than just recording the spending on its own.
  *
  * This only attaches expenditures to Politicians that ingest-copp.ts has
  * already created (matched by name/office/district parsed out of the
- * filing's free-text "Candidate/Issue" field) — it never creates new
+ * filing's free-text "Candidate/Issue" field); it never creates new
  * Politicians itself, so run ingest-copp.ts first. Money aimed at a ballot
  * issue rather than a candidate, or naming a candidate we haven't ingested
  * (wrong cycle, local office, etc.), is skipped and counted in the summary.
@@ -20,18 +20,18 @@
  * endpoint the page's own JS calls for every schedule on the report,
  * distinguished only by a `listName` form field ("expendIndependent" for
  * the one this script already read, "individual" and "committee" for a
- * committee's own donors) — found by watching the network calls a real
+ * committee's own donors), found by watching the network calls a real
  * "View Report" click makes, since the portal's search UI never exposes
  * those listName values itself. All three return the same line-item shape,
  * so no page rendering is needed for any of it.
  *
  * The committee search this starts from only finds committees that filed
  * an independent expenditure of their own, which misses a pass-through
- * funder — a committee (or out-of-state group, if it's registered here at
+ * funder: a committee (or out-of-state group, if it's registered here at
  * all) that gives money to an independent-expenditure spender but never
  * makes one itself. So every committee visited here also has its own
  * "committee"-listName funders searched for by name and, if found, queued
- * to visit in turn — a bounded BFS over the funding graph, not a fixed
+ * to visit in turn: a bounded BFS over the funding graph, not a fixed
  * list, guarded by a visited-committee set (stops cycles) and a
  * safety-valve cap (stops runaway fan-out; not expected to be hit).
  *
@@ -104,7 +104,7 @@ type IeItem = {
   candidateIssue: string;
 };
 
-// Same line-item shape the "individual" and "committee" listNames return —
+// Same line-item shape the "individual" and "committee" listNames return;
 // only entityName/entityAddress and lineItemCompositeDescr are used here.
 // lineItemCompositeDescr is COPP's own label for the row ("Individual
 // Contributions", "Independent Committee Contributions", "Incidental
@@ -174,20 +174,20 @@ async function searchIndependentExpenditureCommittees(page: Page): Promise<Commi
   );
 }
 
-// Finds a committee by name — this is how a committee that funds an
+// Finds a committee by name: this is how a committee that funds an
 // independent-expenditure spender but never makes one itself (Sixteen
 // Thirty Fund funding a Montana PAC, say) gets discovered, since it would
 // never turn up in searchIndependentExpenditureCommittees above.
 //
 // This is the same searchFinancials/EXPEND/COMMITTEE search that function
 // uses, just with independentExpendSearch turned off and a name filled
-// in, *not* the portal's own plain "Committee Search" tab — that one
+// in, *not* the portal's own plain "Committee Search" tab; that one
 // turned out to silently exclude Incidental-type committees entirely
 // (confirmed live: it returns zero results for "Sixteen Thirty Fund" even
 // though the committee demonstrably exists), which is exactly the
 // registration type most of the committees this is trying to catch use.
 // The expenditure search catches it because "Incidental" committees still
-// show up there for any expenditure they've made — including the
+// show up there for any expenditure they've made, including the
 // "expendOther" contribution transferring money onward to whatever they
 // actually fund, which is the reason this search needs to run at all.
 async function searchCommitteesByName(page: Page, name: string): Promise<CommitteeRow[]> {
@@ -259,7 +259,7 @@ async function fetchIndependentExpenditureItems(
     const committeeFunders = (await committeeRes.json()) as FundingJsonItem[];
     funding.push(...fundingItemsFromJson(committeeFunders));
     // Names only, for the caller to chase down as committees in their own
-    // right (see searchCommitteesByName) — kept separate from `funding`
+    // right (see searchCommitteesByName), kept separate from `funding`
     // itself since not every name here will resolve to an MT committee
     // (an out-of-state PAC that gave here without ever registering or
     // spending independently in Montana itself, say).
@@ -312,10 +312,10 @@ type MatchablePolitician = { id: string; name: string; office: string; level: Le
 // Filings name the target in free text, in three shapes seen live on the
 // site: "Candidate Zack Wirth SD9" (full name + district), "Rep. Jane
 // Gillette" (title + full name, no district), and "Buttery SD11" (bare
-// surname + district — several committees only ever give a last name).
+// surname + district: several committees only ever give a last name).
 // Titles are stripped first; a trailing "SD#"/"HD#" is then peeled off and,
 // when present, used to narrow the match to that exact district's
-// Politician before comparing names — without it, a bare surname like
+// Politician before comparing names; without it, a bare surname like
 // "Buttery" would be unresolvable (and a full name is matched directly).
 const TITLE_RE =
   /^(candidate|rep\.?|representative|sen\.?|senator|governor|lt\.?\s*governor|lieutenant governor|judge|justice|mr\.?|mrs\.?|ms\.?|dr\.?)\s+/i;
@@ -390,11 +390,11 @@ function splitEntries(candidateIssueRaw: string, purposeDescr: string, totalAmt:
 
 // Montana's C-6 independent-expenditure grid has no structured
 // support/oppose field at all (confirmed against the live API response
-// shape) — filers only narrate it in free text. Beyond direct sentiment
+// shape); filers only narrate it in free text. Beyond direct sentiment
 // words, this also catches the "explaining/exposing a candidate's vote on
 // X" and "voting record" framing that this dataset's attack-style
 // committees use almost exclusively instead of ever saying "oppose" (a
-// candidate's own supportive spending describes them directly — it never
+// candidate's own supportive spending describes them directly; it never
 // narrates a third party's vote), plus a "(No <Name>, ...)" scorecard
 // shorthand seen in multi-candidate line items. "vote for" is deliberately
 // NOT treated as a support cue: in this corpus it almost always continues
@@ -469,7 +469,7 @@ async function main() {
   // "committee"-listName funders can name a committee that never itself
   // filed an independent expenditure (a pass-through funder like Sixteen
   // Thirty Fund giving to a Montana PAC that then spends against a
-  // candidate) — searchIndependentExpenditureCommittees above would never
+  // candidate); searchIndependentExpenditureCommittees above would never
   // surface that funder on its own, so each committee processed here can
   // enqueue more. visitedCommitteeIds stops a funding cycle between two
   // committees from looping forever; MAX_COMMITTEES is a safety valve

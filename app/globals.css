@@ -159,7 +159,7 @@ body {
     text-transform: uppercase;
   }
 
-  /* Wordmark lockup — see LOGO.md (compact / masthead variant) */
+  /* Wordmark lockup, see LOGO.md (compact / masthead variant) */
   .logo-mark {
     display: inline-flex;
     align-items: center;

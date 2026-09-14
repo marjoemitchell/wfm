@@ -360,7 +360,7 @@
 </div>
 
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;disclaimer&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Illustrative sample figures for design review — not actual filing data.&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Content&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;disclaimer&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Illustrative sample figures for design review, not actual filing data.&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Content&quot;}}">
 const P = {
   R: { bg: '#F3DCD8', ink: '#A33B33', label: 'Republican' },
   D: { bg: '#DCE6F1', ink: '#2F5D8A', label: 'Democrat' },
@@ -472,7 +472,7 @@ class Component extends DCLogic {
     const indDonorCount = (name) => DONORS.filter(d => d.sector === name).length;
 
     const vals = {
-      disclaimer: this.props.disclaimer ?? 'Illustrative sample figures for design review — not actual filing data.',
+      disclaimer: this.props.disclaimer ?? 'Illustrative sample figures for design review, not actual filing data.',
       query: s.query,
       onQuery: (e) => this.setState({ query: e.target.value }),
       tabs: tabDefs.map(([id, label]) => ({

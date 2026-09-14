@@ -21,7 +21,7 @@ export default function FundedByList({
   // The same committee's own independent-expenditure total, so spending
   // with little or no disclosed funding behind it can be called out.
   // Omitted when the committee has no independent expenditures to compare
-  // against — there's nothing to flag without a spending number.
+  // against: there's nothing to flag without a spending number.
   spentIndependently?: number;
 }) {
   const gap = spentIndependently !== undefined && spentIndependently > total;
@@ -31,7 +31,7 @@ export default function FundedByList({
       <div className="border-b border-rule pb-3 text-eyebrow text-ink-quiet">Funded by</div>
       <p className="mt-2 max-w-[640px] text-[16.2px] text-ink-tertiary">
         {money(total)} disclosed from {funderCount} funder{funderCount === 1 ? "" : "s"} in Montana&apos;s own
-        filings — this committee&apos;s own donors, not who it gives to.
+        filings: this committee&apos;s own donors, not who it gives to.
       </p>
 
       {gap && (
@@ -39,7 +39,7 @@ export default function FundedByList({
           <p className="max-w-[640px] text-[15.6px] leading-[1.6] text-ink-secondary">
             <span style={{ color: "var(--color-gold)" }}>{money(spentIndependently! - total)} unaccounted for.</span>{" "}
             This committee spent {money(spentIndependently!)} independently but disclosed only {money(total)} in
-            funding — Montana&apos;s filings don&apos;t show where the rest came from.{" "}
+            funding. Montana&apos;s filings don&apos;t show where the rest came from.{" "}
             <a href="/rules#dark-money" className="text-accent hover:text-accent-hover">
               How this happens →
             </a>

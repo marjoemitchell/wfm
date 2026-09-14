@@ -25,14 +25,14 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
   // categories a donor can do both of at once: it's specifically an
   // independent-expenditure-*only* committee (a "Super PAC" federally, or
   // Montana COPP's "Independent" committee type) that gives up direct
-  // giving in exchange for unlimited independent spending — an ordinary
+  // giving in exchange for unlimited independent spending; an ordinary
   // PAC, federal or state, can do both, subject to contribution limits on
   // the direct side.
   const hasDirect = rows.length > 0;
   const hasIndependent = independentExpenditures.rows.length > 0;
   // A donor doing both gets no headline stat at all: any single number up
   // top next to the donor's name reads as *the* total for the page, and
-  // there is no single total here — these two categories don't sum to
+  // there is no single total here: these two categories don't sum to
   // anything meaningful. Each one instead gets its dollar figure woven
   // directly into its own section's own description below, where it can't
   // be mistaken for anything but what it is.

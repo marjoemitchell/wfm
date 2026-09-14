@@ -2,7 +2,7 @@
 // Single entrypoint for all four Railway services in this project (the
 // web app, and the three data-ingestion jobs) so they can all use the same
 // default "start" command and be told apart purely by the SERVICE_ROLE
-// environment variable — no per-service "Custom Start Command" dashboard
+// environment variable, no per-service "Custom Start Command" dashboard
 // setting needed. Defaults to "web" so the existing deployment keeps
 // working if SERVICE_ROLE is ever unset.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
