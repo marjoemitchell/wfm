@@ -101,16 +101,21 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
         </div>
       )}
 
-      {independentExpenditures.rows.length > 0 ? (
+      {/* Unlike a federal Super PAC, a Montana PAC can make direct
+          contributions and independent expenditures at the same time (see
+          e.g. a PAC that gives to some candidates directly and spends
+          independently on others) — show both sections rather than
+          picking one, or the other's totals go missing from the page
+          entirely despite still counting toward the headline stat above. */}
+      {rows.length > 0 && (
+        <div className="pt-9">
+          <RecipientList rows={rows} />
+        </div>
+      )}
+      {independentExpenditures.rows.length > 0 && (
         <div className="pt-9">
           <IndependentExpenditureCandidateList donorName={donor.name} rows={independentExpenditures.rows} />
         </div>
-      ) : (
-        rows.length > 0 && (
-          <div className="pt-9">
-            <RecipientList rows={rows} />
-          </div>
-        )
       )}
     </div>
   );
