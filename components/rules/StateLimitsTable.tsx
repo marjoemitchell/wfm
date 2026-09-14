@@ -98,7 +98,7 @@ export default function StateLimitsTable() {
 
       <div className="mt-9 grid grid-cols-[repeat(auto-fit,minmax(260px,1fr))] gap-px border-y border-rule bg-rule">
         {STATE_NOTES.map((note) => (
-          <div key={note.title} className="bg-ground px-6 pb-[26px] pt-6">
+          <div key={note.title} id={note.id} className="bg-ground px-6 pb-[26px] pt-6">
             <div className="text-[12.6px] uppercase tracking-[0.16em] text-accent">{note.title}</div>
             <p className="mt-2 text-[16.8px] leading-[1.6] text-ink-secondary">{note.body}</p>
           </div>

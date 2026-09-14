@@ -126,7 +126,7 @@ export const STATE_ROWS: StateRow[] = [
   },
 ];
 
-export const STATE_NOTES: { title: string; body: string }[] = [
+export const STATE_NOTES: { id?: string; title: string; body: string }[] = [
   {
     title: '"Per election" is not per cycle',
     body: "A contested primary and a general election count as two separate elections, so the cap applies twice. With no contested primary there is only one.",
@@ -138,6 +138,11 @@ export const STATE_NOTES: { title: string; body: string }[] = [
   {
     title: "Party money now reaches judges",
     body: "House Bill 39 (2025) repealed Montana's prohibition on party committees contributing to judicial candidates, so Supreme Court and district judge races can now take party money.",
+  },
+  {
+    id: "dark-money",
+    title: "Dark money moves through \"incidental\" committees",
+    body: "A nonprofit whose main purpose isn't political can register with the COPP as an incidental committee to spend on Montana races. It only has to itemize money it received specifically as a campaign contribution — the general donations that fund it, which federal law already lets it keep anonymous, don't count and never appear. A committee can show tens of thousands of dollars in spending here against zero dollars in contributions on record.",
   },
 ];
 

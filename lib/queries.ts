@@ -327,12 +327,33 @@ export async function getDonorBySlug(slug: string) {
   const ieTotal = ieRows.reduce((sum, r) => sum + r.amount, 0);
   const ieRecipients = new Set(ieRows.map((r) => r.politician.slug)).size;
 
+  // Only populated for MT_COPP committees the independent-expenditure
+  // ingest has visited (itself or as a discovered funder of one) — see
+  // ingest-copp-ie.ts. A donor with independent expenditures but no rows
+  // here, or rows that don't cover the spending above, is exactly what
+  // undisclosed funding looks like from the outside: COPP has a record of
+  // where the money went but not where it came from.
+  const fundingReceived = await db.committeeFunding.findMany({
+    where: { committeeId: donor.id },
+    orderBy: { amount: "desc" },
+  });
+  const fundingRows = fundingReceived.map((f) => ({
+    funderName: f.funderName,
+    funderCity: f.funderCity,
+    funderState: f.funderState,
+    funderType: f.funderType,
+    amount: toNumber(f.amount),
+    date: f.date,
+  }));
+  const fundingTotal = fundingRows.reduce((sum, r) => sum + r.amount, 0);
+
   return {
     donor,
     rows,
     totalGiven,
     recipients,
     independentExpenditures: { total: ieTotal, recipients: ieRecipients, rows: ieRows },
+    funding: { total: fundingTotal, funderCount: fundingRows.length, rows: fundingRows },
   };
 }
 

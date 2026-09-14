@@ -4,6 +4,7 @@ import { getDonorBySlug, getPoliticianNameBySlug } from "@/lib/queries";
 import { money } from "@/lib/format";
 import RecipientList from "@/components/donor/RecipientList";
 import IndependentExpenditureCandidateList from "@/components/donor/IndependentExpenditureCandidateList";
+import FundedByList from "@/components/donor/FundedByList";
 
 export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
   const { slug } = await props.params;
@@ -17,7 +18,8 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
   ]);
   if (!data) notFound();
 
-  const { donor, rows, totalGiven, recipients, independentExpenditures } = data;
+  const { donor, rows, totalGiven, recipients, independentExpenditures, funding } = data;
+  const hasFunding = funding.rows.length > 0;
 
   // Direct contributions and independent expenditures are legally distinct
   // categories a donor can do both of at once: it's specifically an
@@ -125,6 +127,16 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
         </div>
       )}
 
+      {hasFunding && (
+        <div className="pt-9">
+          <FundedByList
+            rows={funding.rows}
+            total={funding.total}
+            funderCount={funding.funderCount}
+            spentIndependently={hasIndependent ? independentExpenditures.total : undefined}
+          />
+        </div>
+      )}
       {hasDirect && (
         <div className="pt-9">
           <RecipientList rows={rows} total={totalGiven} recipientCount={recipients} showTotal={isMixed} />
