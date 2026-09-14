@@ -19,16 +19,18 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
 
   const { donor, rows, totalGiven, recipients, independentExpenditures } = data;
 
-  // A pure independent-expenditure spender never makes direct contributions
-  // by law, so totalGiven/recipients are always 0 for them, and showing that
-  // in the headline reads as broken next to a page full of IE activity.
-  // Swap to what they've actually spent whenever there's nothing to show
-  // for direct giving.
-  const isPureSpender = rows.length === 0 && independentExpenditures.rows.length > 0;
-  const headlineAmount = isPureSpender ? independentExpenditures.total : totalGiven;
-  const headlineAmountLabel = isPureSpender ? "Total spent" : "Total given";
-  const headlineCount = isPureSpender ? independentExpenditures.recipients : recipients;
-  const headlineCountLabel = isPureSpender ? "Candidates" : "Recipients";
+  // Direct contributions and independent expenditures are legally distinct
+  // categories a donor can do both of at once: it's specifically an
+  // independent-expenditure-*only* committee (a "Super PAC" federally, or
+  // Montana COPP's "Independent" committee type) that gives up direct
+  // giving in exchange for unlimited independent spending — an ordinary
+  // PAC, federal or state, can do both, subject to contribution limits on
+  // the direct side. So each gets its own headline stat pair rather than
+  // one crowding out or being combined with the other; a donor that's
+  // genuinely independent-only just never has a direct-giving pair to
+  // show.
+  const hasDirect = rows.length > 0;
+  const hasIndependent = independentExpenditures.rows.length > 0;
 
   return (
     <div>
@@ -73,15 +75,31 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
             </p>
           )}
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
-          <div>
-            <div className="text-stat-secondary text-ink">{money(headlineAmount)}</div>
-            <div className="text-eyebrow mt-2 text-ink-tertiary">{headlineAmountLabel}</div>
-          </div>
-          <div>
-            <div className="text-stat-secondary text-ink">{headlineCount}</div>
-            <div className="text-eyebrow mt-2 text-ink-tertiary">{headlineCountLabel}</div>
-          </div>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          {hasDirect && (
+            <>
+              <div>
+                <div className="text-stat-secondary text-ink">{money(totalGiven)}</div>
+                <div className="text-eyebrow mt-2 text-ink-tertiary">Total given</div>
+              </div>
+              <div>
+                <div className="text-stat-secondary text-ink">{recipients}</div>
+                <div className="text-eyebrow mt-2 text-ink-tertiary">Recipients</div>
+              </div>
+            </>
+          )}
+          {hasIndependent && (
+            <>
+              <div>
+                <div className="text-stat-secondary text-ink">{money(independentExpenditures.total)}</div>
+                <div className="text-eyebrow mt-2 text-ink-tertiary">Spent independently</div>
+              </div>
+              <div>
+                <div className="text-stat-secondary text-ink">{independentExpenditures.recipients}</div>
+                <div className="text-eyebrow mt-2 text-ink-tertiary">Candidates</div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -101,18 +119,12 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
         </div>
       )}
 
-      {/* Unlike a federal Super PAC, a Montana PAC can make direct
-          contributions and independent expenditures at the same time (see
-          e.g. a PAC that gives to some candidates directly and spends
-          independently on others) — show both sections rather than
-          picking one, or the other's totals go missing from the page
-          entirely despite still counting toward the headline stat above. */}
-      {rows.length > 0 && (
+      {hasDirect && (
         <div className="pt-9">
           <RecipientList rows={rows} />
         </div>
       )}
-      {independentExpenditures.rows.length > 0 && (
+      {hasIndependent && (
         <div className="pt-9">
           <IndependentExpenditureCandidateList donorName={donor.name} rows={independentExpenditures.rows} />
         </div>
