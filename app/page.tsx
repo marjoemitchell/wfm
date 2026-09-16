@@ -1,7 +1,6 @@
-import HeadlineBand from "@/components/roster/HeadlineBand";
 import FilterBar from "@/components/roster/FilterBar";
 import RosterTable from "@/components/roster/RosterTable";
-import { getRoster, getRosterStats, type RosterSort } from "@/lib/queries";
+import { getRoster, type RosterSort } from "@/lib/queries";
 
 export default async function RosterPage(props: PageProps<"/">) {
   const searchParams = await props.searchParams;
@@ -9,7 +8,7 @@ export default async function RosterPage(props: PageProps<"/">) {
   const sort = (typeof searchParams.sort === "string" ? searchParams.sort : "raised") as RosterSort;
   const q = typeof searchParams.q === "string" ? searchParams.q : "";
 
-  const [stats, rows] = await Promise.all([getRosterStats(), getRoster({ level, sort, query: q })]);
+  const rows = await getRoster({ level, sort, query: q });
 
   const flatSearchParams: Record<string, string | undefined> = {
     level: typeof searchParams.level === "string" ? searchParams.level : undefined,
@@ -20,12 +19,6 @@ export default async function RosterPage(props: PageProps<"/">) {
 
   return (
     <div>
-      <HeadlineBand
-        officeholders={stats.officeholders}
-        trackedMoney={stats.trackedMoney}
-        namedDonors={stats.namedDonors}
-        medianInState={stats.medianInState}
-      />
       <FilterBar level={level} sort={sort} searchParams={flatSearchParams} />
       <RosterTable rows={rows} />
     </div>

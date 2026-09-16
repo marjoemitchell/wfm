@@ -34,7 +34,7 @@ export default function Masthead() {
       <div className="min-w-0">
         <Logo />
         <p className="text-eyebrow mt-2 text-ink-faint" style={{ letterSpacing: "0.3em" }}>
-          Roster · Donors · 2026 cycle
+          2026 cycle
         </p>
       </div>
       <div className="flex w-full min-w-0 flex-[0_1_340px] items-center gap-2 border-b border-border pb-2 sm:w-auto sm:min-w-[300px]">
