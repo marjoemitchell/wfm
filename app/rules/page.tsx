@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { FOOTNOTE_TEXT_PREFIX } from "@/lib/contribution-limits";
 import FederalLimitsTable from "@/components/rules/FederalLimitsTable";
 import StateLimitsTable from "@/components/rules/StateLimitsTable";
+import Glossary from "@/components/rules/Glossary";
 
 export const metadata: Metadata = {
   title: "How the Money Moves",
-  description: "Federal and Montana state contribution limits, committee types, and how disclosure gaps happen.",
+  description:
+    "Federal and Montana state contribution limits, committee types, how disclosure gaps happen, and a glossary of the terms used throughout this site.",
 };
 
 export default function RulesPage() {
@@ -22,6 +24,7 @@ export default function RulesPage() {
 
       <FederalLimitsTable />
       <StateLimitsTable />
+      <Glossary />
 
       <p className="mb-[60px] mt-5 max-w-[760px] text-[13.8px] leading-[1.6] text-ink-faint">
         {FOOTNOTE_TEXT_PREFIX}
