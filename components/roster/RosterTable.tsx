@@ -3,10 +3,18 @@
 import { useId, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { money, percent, rank } from "@/lib/format";
+import { money, percent, rank, levelLabel } from "@/lib/format";
 import PartyChip from "./PartyChip";
 import { buildRosterHref } from "./FilterBar";
-import type { Party } from "@/lib/generated/prisma/enums";
+import type { Party, Level } from "@/lib/generated/prisma/enums";
+
+// Federal first, then by how directly statewide voters chose the office,
+// matching the order the branch filter itself already lists them in.
+// Section headers only render when a view actually spans more than one
+// of these (an unfiltered "All" view), so filtering to a single branch
+// looks exactly as it did before grouping existed: one flat list, no
+// redundant header repeating what the filter tab above it already says.
+const LEVEL_GROUP_ORDER: Level[] = ["FEDERAL", "STATEWIDE", "LEGISLATURE", "JUDICIAL"];
 
 // Aligned to RosterTable's own sm:grid-cols-[30px_2.3fr_1.4fr_1.5fr_1fr_40px]
 // below, column for column: this replaced FilterBar's old floating "Sort"
@@ -43,6 +51,7 @@ export type RosterRowData = {
   name: string;
   office: string;
   party: Party;
+  level: Level;
   totalRaised: number;
   outsideSupport: number;
   inStatePct: number;
@@ -83,6 +92,39 @@ export default function RosterTable({ rows }: { rows: RosterRowData[] }) {
     displayRows.sort((a, b) => b.displayTotal - a.displayTotal);
   }
 
+  // Grouped by level (Federal, Statewide, Legislature, Judicial) so an
+  // unfiltered "All" view isn't one undifferentiated list of 467+ rows;
+  // only worth doing when a view actually spans more than one level, a
+  // single-branch filter renders exactly as it did before grouping
+  // existed. Flattened into one ordered list of headers and rows up
+  // front, rather than nested loops in the JSX below, so the rank number
+  // next to each row can just be "how many rows have rendered so far":
+  // it reflects on-screen position once grouped, not raw sort position,
+  // the same tradeoff FilterBar's level filter already makes.
+  const levelGroups = LEVEL_GROUP_ORDER.map((level) => ({
+    level,
+    items: displayRows.filter((d) => d.row.level === level),
+  })).filter((g) => g.items.length > 0);
+  const showGroupHeaders = levelGroups.length > 1;
+
+  type RenderItem =
+    | { type: "header"; level: Level }
+    | { type: "row"; row: RosterRowData; displayTotal: number; rankIndex: number };
+  const renderItems: RenderItem[] = [];
+  if (showGroupHeaders) {
+    let rankIndex = 0;
+    for (const group of levelGroups) {
+      renderItems.push({ type: "header", level: group.level });
+      for (const { row, displayTotal } of group.items) {
+        renderItems.push({ type: "row", row, displayTotal, rankIndex: rankIndex++ });
+      }
+    }
+  } else {
+    displayRows.forEach(({ row, displayTotal }, rankIndex) => {
+      renderItems.push({ type: "row", row, displayTotal, rankIndex });
+    });
+  }
+
   return (
     <div>
       {hasAnyOutsideSpending && (
@@ -107,14 +149,22 @@ export default function RosterTable({ rows }: { rows: RosterRowData[] }) {
         </div>
       )}
       <RosterTableHeader params={new URLSearchParams(searchParams.toString())} />
-      {displayRows.map(({ row, displayTotal }, i) => {
+      {renderItems.map((item) => {
+        if (item.type === "header") {
+          return (
+            <div key={`header-${item.level}`} className="pb-2 pt-7 text-eyebrow text-ink-quiet">
+              {levelLabel(item.level)}
+            </div>
+          );
+        }
+        const { row, displayTotal, rankIndex } = item;
         const checked = compare.includes(row.slug);
         return (
           <div
             key={row.slug}
             className="grid grid-cols-[24px_1fr_auto_32px] items-start gap-3 border-b border-rule-faint py-5 hover:bg-ground-raised sm:grid-cols-[30px_2.3fr_1.4fr_1.5fr_1fr_40px] sm:items-center sm:gap-[22px]"
           >
-            <span className="text-[15.6px] text-ink-quiet">{rank(i)}</span>
+            <span className="text-[15.6px] text-ink-quiet">{rank(rankIndex)}</span>
             <div className="min-w-0">
               <Link href={`/officeholder/${row.slug}`}>
                 <div className="text-roster-name text-ink">{row.name}</div>
