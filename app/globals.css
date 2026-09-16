@@ -98,14 +98,21 @@ body {
     font-family: var(--font-display);
     font-size: clamp(30px, 7vw, 55.2px);
     font-weight: 400;
-    letter-spacing: -0.025em;
+    /* was -0.025em: Playfair Display's $ glyph already crowds the digit
+       right after it (confirmed by screenshotting a real "$0" at this
+       size), and this class is the one that renders every dollar-figure
+       headline on the site. Loosened just enough to give that pairing
+       room; still visibly tight, matching the rest of the site's
+       negative-tracked display type. */
+    letter-spacing: -0.012em;
     line-height: 1;
   }
   .text-stat-secondary {
     font-family: var(--font-display);
     font-size: clamp(28px, 6.5vw, 48px);
     font-weight: 400;
-    letter-spacing: -0.025em;
+    /* Same reasoning as .text-stat-headline above. */
+    letter-spacing: -0.012em;
     line-height: 1;
   }
   .text-percent-callout {
