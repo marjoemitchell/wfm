@@ -21,7 +21,7 @@ export default function HeadlineBand({
   return (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(190px,1fr))] border-b border-rule">
       {cells.map((cell) => (
-        <div key={cell.label} className="pt-[34px] pr-[26px] pb-[30px]">
+        <div key={cell.label} className="pt-[14px] pr-[26px] pb-[10px] sm:pt-[34px] sm:pb-[30px]">
           <div className="text-stat-headline text-ink">{cell.value}</div>
           <div className="text-eyebrow mt-3 text-accent">{cell.label}</div>
           <p className="mt-1 hidden text-[16.8px] leading-[1.45] text-ink-tertiary sm:block">{cell.note}</p>
