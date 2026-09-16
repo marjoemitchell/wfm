@@ -23,10 +23,19 @@ export default function Nav() {
   // rather than fully in view, exactly what a fixed scrollLeft would do
   // regardless of which tab is active. Scrolling the active one to the
   // start on every navigation keeps it consistently reachable instead of
-  // wherever the bar happened to be left. block: "nearest" keeps this to
-  // the bar's own horizontal scroll, not the page's vertical one, which
-  // scrollIntoView will otherwise happily hijack too.
+  // wherever the bar happened to be left.
+  //
+  // Desktop should never do this: even though the bar can technically
+  // overflow there too (the Support button crowds it at common window
+  // widths), sliding the whole row sideways on every click reads as
+  // broken on a layout the user expects to just sit still, tabs included.
+  // So this is gated on the same `sm` breakpoint the rest of the shell
+  // uses for mobile-only behavior, not on whether the bar happens to
+  // overflow right now. block: "nearest" keeps this to the bar's own
+  // horizontal scroll, not the page's vertical one, which scrollIntoView
+  // will otherwise happily hijack too.
   useEffect(() => {
+    if (window.matchMedia("(min-width: 640px)").matches) return;
     activeRef.current?.scrollIntoView({ inline: "start", block: "nearest", behavior: "smooth" });
   }, [pathname]);
 
