@@ -27,9 +27,15 @@ export default async function MapPage() {
         </div>
         <div>
           <div className="text-stat-secondary text-ink">{money(totalItemized)}</div>
-          <div className="text-eyebrow mt-2 text-ink-tertiary">Total itemized</div>
+          <div className="text-eyebrow mt-2 text-ink-tertiary">Itemized contributions</div>
         </div>
       </div>
+
+      <p className="max-w-[640px] pt-4 text-[13.8px] text-ink-faint">
+        Smaller than the &quot;Total raised&quot; figure at the top of every page: that one counts everything a
+        campaign reported raising, this one only counts contributions itemized by donor, which excludes small-dollar
+        gifts below the reporting threshold.
+      </p>
 
       <SplitBar inStateTotal={inStateTotal} outOfStateTotal={outOfStateTotal} inStatePct={inStatePct} />
 
