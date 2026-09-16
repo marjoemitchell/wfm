@@ -6,7 +6,10 @@
  * "Contributions" schedules (its Individual and Committee donor tables)
  * from the same reports and loads them as CommitteeFunding rows: this is
  * what lets a committee's disclosed funding be checked against its
- * spending later, rather than just recording the spending on its own.
+ * spending later, rather than just recording the spending on its own. A
+ * funding row also gets a funderDonorId when the funder itself resolves
+ * to a committee this run also visits, so the donor page can link straight
+ * through to that committee's own page rather than showing plain text.
  *
  * This only attaches expenditures to Politicians that ingest-copp.ts has
  * already created (matched by name/office/district parsed out of the
@@ -457,8 +460,15 @@ async function main() {
     funderType: string;
     amount: number;
     date: Date;
+    funderDonorId: string | null;
   }[] = [];
   const processedDonorIds = new Set<string>();
+  // Filled in as committees are processed below (by their own registered
+  // name, lowercased), then applied to fundingRows in one pass at the end
+  // once every committee in the queue, including ones discovered partway
+  // through, has had a chance to resolve: a funder can easily be
+  // processed *after* the row naming it as a funder was written.
+  const donorIdByCommitteeName = new Map<string, string>();
   let itemCount = 0;
   let noTarget = 0;
   let noTargetAmt = 0;
@@ -524,10 +534,11 @@ async function main() {
       const donorId = await upsertCommitteeDonor(committee.committeeName, committee.committeeAddress);
       if (!donorId) continue;
       processedDonorIds.add(donorId);
+      donorIdByCommitteeName.set(committee.committeeName.trim().toLowerCase(), donorId);
 
       const { items, funding, committeeFunderNames } = await fetchIndependentExpenditureItems(page, committee.committeeId);
       for (const f of funding) {
-        fundingRows.push({ committeeId: donorId, ...f });
+        fundingRows.push({ committeeId: donorId, ...f, funderDonorId: null });
       }
 
       for (const name of committeeFunderNames) {
@@ -598,12 +609,22 @@ async function main() {
     console.warn(`Stopped at the ${MAX_COMMITTEES}-committee safety cap with ${queue.length} discovered committees still unvisited.`);
   }
 
+  let linkedFunderCount = 0;
+  for (const row of fundingRows) {
+    const funderDonorId = donorIdByCommitteeName.get(row.funderName.trim().toLowerCase());
+    if (funderDonorId) {
+      row.funderDonorId = funderDonorId;
+      linkedFunderCount++;
+    }
+  }
+
   console.log(`\nParsed ${itemCount} independent-expenditure line items.`);
   console.log(`  no candidate/issue named: ${noTarget} items, $${noTargetAmt.toFixed(0)}`);
   console.log(`  named target not found among ingested candidates: ${noMatch} items, $${noMatchAmt.toFixed(0)}`);
   console.log(`  multi-candidate line item, couldn't verify split: ${unresolvedSplit} items, $${unresolvedSplitAmt.toFixed(0)}`);
   console.log(`  direction unclear (no explicit support/oppose language): ${unclearDirection} of ${rows.length} matched rows, $${unclearDirectionAmt.toFixed(0)}`);
   console.log(`\nParsed ${fundingRows.length} committee funding rows across ${processedDonorIds.size} committees (${discoveredCount} discovered as pass-through funders, not from the independent-expenditure search).`);
+  console.log(`  ${linkedFunderCount} of those rows link to a funder we also track as its own committee.`);
 
   await db.$transaction([
     db.independentExpenditure.deleteMany({ where: { politicianId: { in: politicians.map((p) => p.id) } } }),

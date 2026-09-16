@@ -335,6 +335,15 @@ export async function getDonorBySlug(slug: string) {
   // where the money went but not where it came from.
   const fundingReceived = await db.committeeFunding.findMany({
     where: { committeeId: donor.id },
+    select: {
+      funderName: true,
+      funderCity: true,
+      funderState: true,
+      funderType: true,
+      amount: true,
+      date: true,
+      funderDonor: { select: { slug: true } },
+    },
     orderBy: { amount: "desc" },
   });
   const fundingRows = fundingReceived.map((f) => ({
@@ -344,6 +353,7 @@ export async function getDonorBySlug(slug: string) {
     funderType: f.funderType,
     amount: toNumber(f.amount),
     date: f.date,
+    funderSlug: f.funderDonor?.slug ?? null,
   }));
   const fundingTotal = fundingRows.reduce((sum, r) => sum + r.amount, 0);
 

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { money, formatDate } from "@/lib/format";
 
 export type FundingRow = {
@@ -7,6 +8,10 @@ export type FundingRow = {
   funderType: string;
   amount: number;
   date: Date;
+  // Set only when the funder itself resolved to a committee we track as
+  // its own donor: lets the row link straight to that committee's page.
+  // Null for an individual funder, or a committee we haven't matched.
+  funderSlug: string | null;
 };
 
 export default function FundedByList({
@@ -49,27 +54,38 @@ export default function FundedByList({
         </div>
       )}
 
-      {rows.map((r, i) => (
-        <div
-          key={`${r.funderName}-${i}`}
-          className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-rule-faint py-5 sm:grid-cols-[2.2fr_1.4fr_1.2fr_0.8fr] sm:gap-[22px]"
-        >
-          <div className="min-w-0">
-            <div className="text-recipient-name text-ink">{r.funderName}</div>
-            <div className="text-[16.2px] text-ink-tertiary">
-              {r.funderCity}, {r.funderState}
+      {rows.map((r, i) => {
+        const rowContent = (
+          <>
+            <div className="min-w-0">
+              <div className="text-recipient-name text-ink">{r.funderName}</div>
+              <div className="text-[16.2px] text-ink-tertiary">
+                {r.funderCity}, {r.funderState}
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-[15.6px] text-ink-secondary sm:hidden">
+                <span>{r.funderType}</span>
+                <span>·</span>
+                <span>{formatDate(r.date)}</span>
+              </div>
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-[15.6px] text-ink-secondary sm:hidden">
-              <span>{r.funderType}</span>
-              <span>·</span>
-              <span>{formatDate(r.date)}</span>
-            </div>
+            <div className="hidden text-[15.6px] text-ink-secondary sm:block">{r.funderType}</div>
+            <div className="hidden text-[16.8px] text-ink-secondary sm:block">{formatDate(r.date)}</div>
+            <div className="text-recipient-name text-right tabular-nums text-ink">{money(r.amount)}</div>
+          </>
+        );
+        const rowLayout = "grid grid-cols-[1fr_auto] items-center gap-4 border-b border-rule-faint py-5 sm:grid-cols-[2.2fr_1.4fr_1.2fr_0.8fr] sm:gap-[22px]";
+        const key = `${r.funderName}-${i}`;
+
+        return r.funderSlug ? (
+          <Link key={key} href={`/donor/${r.funderSlug}`} className={`${rowLayout} hover:bg-ground-raised`}>
+            {rowContent}
+          </Link>
+        ) : (
+          <div key={key} className={rowLayout}>
+            {rowContent}
           </div>
-          <div className="hidden text-[15.6px] text-ink-secondary sm:block">{r.funderType}</div>
-          <div className="hidden text-[16.8px] text-ink-secondary sm:block">{formatDate(r.date)}</div>
-          <div className="text-recipient-name text-right tabular-nums text-ink">{money(r.amount)}</div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

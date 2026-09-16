@@ -72,7 +72,8 @@ model Donor {
   jfcParticipants      Json?
   contributions        Contribution[]
   independentExpenditures IndependentExpenditure[]
-  fundingReceived      CommitteeFunding[]
+  fundingReceived      CommitteeFunding[] @relation("CommitteeFundingRecipient")
+  fundingGiven         CommitteeFunding[] @relation("CommitteeFundingFunder")
 
   @@index([sector])
   @@index([state])
@@ -138,7 +139,15 @@ model CommitteeFunding {
   funderType  String
   amount      Decimal  @db.Decimal(12, 2)
   date        DateTime
-  committee   Donor    @relation(fields: [committeeId], references: [id], onDelete: Cascade)
+  // Set only when the funder itself resolved to a committee we already
+  // track (via ingest-copp-ie.ts's by-name committee search), so the
+  // donor page can link straight to that committee's own page instead of
+  // showing plain text; null just means we haven't matched it, not that
+  // it isn't a committee. Never set for an individual funder.
+  funderDonorId String?
+  committee   Donor    @relation("CommitteeFundingRecipient", fields: [committeeId], references: [id], onDelete: Cascade)
+  funderDonor Donor?   @relation("CommitteeFundingFunder", fields: [funderDonorId], references: [id], onDelete: SetNull)
 
   @@index([committeeId])
+  @@index([funderDonorId])
 }
