@@ -1,13 +1,8 @@
 import Link from "next/link";
 
 const BRANCHES = ["All", "Federal", "Statewide", "Legislature", "Judicial"];
-const SORTS: { key: "raised" | "instate" | "name"; label: string }[] = [
-  { key: "raised", label: "Total raised" },
-  { key: "instate", label: "In-state %" },
-  { key: "name", label: "Name" },
-];
 
-function buildHref(params: URLSearchParams, updates: Record<string, string>) {
+export function buildRosterHref(params: URLSearchParams, updates: Record<string, string>) {
   const next = new URLSearchParams(params);
   for (const [k, v] of Object.entries(updates)) {
     if (v === "" || v === "All") next.delete(k);
@@ -17,13 +12,15 @@ function buildHref(params: URLSearchParams, updates: Record<string, string>) {
   return `/${qs ? `?${qs}` : ""}`;
 }
 
+// Sorting used to have its own row here, floating unaligned to the right
+// above a grid of columns it didn't actually label (see RosterTable's own
+// header row, which replaced it: real headers over the real columns,
+// doubling as the sort affordances instead of a separate control).
 export default function FilterBar({
   level,
-  sort,
   searchParams,
 }: {
   level: string;
-  sort: string;
   searchParams: Record<string, string | undefined>;
 }) {
   const params = new URLSearchParams(
@@ -31,36 +28,19 @@ export default function FilterBar({
   );
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-rule py-[18px]">
+    <div className="flex flex-wrap items-center gap-4 border-b border-rule py-[18px]">
       <div className="flex flex-wrap gap-[22px]">
         {BRANCHES.map((b) => {
           const active = level === b || (b === "All" && !level);
           return (
             <Link
               key={b}
-              href={buildHref(params, { level: b })}
+              href={buildRosterHref(params, { level: b })}
               className={`text-[16.8px] pb-[3px] border-b ${
                 active ? "text-ink border-accent" : "text-ink-quiet border-transparent"
               }`}
             >
               {b}
-            </Link>
-          );
-        })}
-      </div>
-      <div className="flex items-center gap-[22px]">
-        <span className="text-[14.4px] tracking-[0.2em] uppercase text-ink-quiet">Sort</span>
-        {SORTS.map((s) => {
-          const active = sort === s.key || (!sort && s.key === "raised");
-          return (
-            <Link
-              key={s.key}
-              href={buildHref(params, { sort: s.key })}
-              className={`text-[16.8px] pb-[3px] border-b ${
-                active ? "text-ink border-accent" : "text-ink-quiet border-transparent"
-              }`}
-            >
-              {s.label}
             </Link>
           );
         })}

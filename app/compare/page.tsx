@@ -29,13 +29,15 @@ export default async function ComparePage(props: PageProps<"/compare">) {
             Up to four officeholders. Selections carry over from the roster.
           </p>
         </div>
-        <Link
-          href="/compare"
-          className="text-[15px] uppercase text-ink-secondary"
-          style={{ letterSpacing: "0.18em", border: "1px solid var(--color-border)", padding: "10px 16px" }}
-        >
-          Clear
-        </Link>
+        {ids.length > 0 && (
+          <Link
+            href="/compare"
+            className="text-[15px] uppercase text-ink-secondary"
+            style={{ letterSpacing: "0.18em", border: "1px solid var(--color-border)", padding: "10px 16px" }}
+          >
+            Clear
+          </Link>
+        )}
       </div>
 
       <div className="pt-6">

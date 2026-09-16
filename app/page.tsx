@@ -38,7 +38,7 @@ export default async function RosterPage(props: PageProps<"/">) {
           them.
         </p>
       </div>
-      <FilterBar level={level} sort={sort} searchParams={flatSearchParams} />
+      <FilterBar level={level} searchParams={flatSearchParams} />
       <RosterTable rows={rows} />
     </div>
   );

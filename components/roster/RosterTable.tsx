@@ -5,7 +5,38 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { money, percent, rank } from "@/lib/format";
 import PartyChip from "./PartyChip";
+import { buildRosterHref } from "./FilterBar";
 import type { Party } from "@/lib/generated/prisma/enums";
+
+// Aligned to RosterTable's own sm:grid-cols-[30px_2.3fr_1.4fr_1.5fr_1fr_40px]
+// below, column for column: this replaced FilterBar's old floating "Sort"
+// row, which sat off to the right unaligned to any of the columns it
+// claimed to sort, and left three columns (Top sector, In-state, the
+// amount) with no header at all. Desktop only: mobile stacks every field
+// into one block per row, so a separate header row has nothing to align
+// to there. Not every column is sortable (Sector isn't a RosterSort key
+// at all), so this is listed explicitly per column rather than mapped
+// from an array, the two don't share an order.
+function RosterTableHeader({ params }: { params: URLSearchParams }) {
+  const sort = params.get("sort") || "raised";
+  const headerClass = (active: boolean) => `text-[12.6px] uppercase tracking-[0.12em] ${active ? "text-accent" : "text-ink-quiet"}`;
+  return (
+    <div className="hidden border-b border-rule pb-3 sm:grid sm:grid-cols-[30px_2.3fr_1.4fr_1.5fr_1fr_40px] sm:items-end sm:gap-[22px]">
+      <span />
+      <Link href={buildRosterHref(params, { sort: "name" })} className={headerClass(sort === "name")}>
+        Name
+      </Link>
+      <span className={headerClass(false)}>Sector</span>
+      <Link href={buildRosterHref(params, { sort: "instate" })} className={headerClass(sort === "instate")}>
+        In-state %
+      </Link>
+      <Link href={buildRosterHref(params, { sort: "raised" })} className={`text-right ${headerClass(sort === "raised")}`}>
+        Total raised
+      </Link>
+      <span className={`text-right ${headerClass(false)}`}>Compare</span>
+    </div>
+  );
+}
 
 export type RosterRowData = {
   slug: string;
@@ -75,6 +106,7 @@ export default function RosterTable({ rows }: { rows: RosterRowData[] }) {
           </div>
         </div>
       )}
+      <RosterTableHeader params={new URLSearchParams(searchParams.toString())} />
       {displayRows.map(({ row, displayTotal }, i) => {
         const checked = compare.includes(row.slug);
         return (
@@ -108,8 +140,13 @@ export default function RosterTable({ rows }: { rows: RosterRowData[] }) {
               </div>
             </div>
             <div className="hidden sm:block">
+              {/* Neutral fill, not accent: this bar is a plain magnitude
+                  indicator, not a highlight, and the percent is already
+                  printed below it regardless, this is just a quick visual
+                  scan aid across rows. Accent red stays reserved for
+                  actual emphasis (the compare button, active nav/sort). */}
               <div className="h-[2px] w-full bg-track">
-                <div className="h-[2px] bg-accent" style={{ width: `${Math.min(100, row.inStatePct)}%` }} />
+                <div className="h-[2px] bg-ink-tertiary" style={{ width: `${Math.min(100, row.inStatePct)}%` }} />
               </div>
               <div className="mt-2 text-[15px] uppercase text-ink-quiet" style={{ letterSpacing: "0.1em" }}>
                 In-state {percent(row.inStatePct)}
