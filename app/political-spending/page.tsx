@@ -14,16 +14,10 @@ const HEADERS: Record<SpendingCategory, { title: string; body: string }> = {
     title: "Ballot measure spending",
     body: "Money spent supporting or opposing a statewide ballot measure (a Constitutional Initiative, statutory Initiative, or Legislative Referendum). A local levy or bond isn't included here: it's filed as free text with no official code, and the same measure shows up spelled a few different ways across filings with nothing to reconcile them against.",
   },
-  electioneering: {
-    title: "Electioneering communications",
-    body: "Ads that name a candidate close to an election without expressly telling anyone how to vote, a separate legal category from an independent expenditure.",
-  },
 };
 
 function resolveCategory(searchParams: { category?: string | string[] }): SpendingCategory {
-  return searchParams.category === "ballot-measures" || searchParams.category === "electioneering"
-    ? searchParams.category
-    : "candidates";
+  return searchParams.category === "ballot-measures" ? searchParams.category : "candidates";
 }
 
 export async function generateMetadata(props: PageProps<"/political-spending">): Promise<Metadata> {
@@ -79,12 +73,6 @@ export default async function PoliticalSpendingPage(props: PageProps<"/political
             ))}
           </div>
         ))}
-
-      {category === "electioneering" && (
-        <div className="py-[70px] text-center text-[18px] text-ink-quiet">
-          Not tracked yet, on the list for a future update.
-        </div>
-      )}
     </div>
   );
 }

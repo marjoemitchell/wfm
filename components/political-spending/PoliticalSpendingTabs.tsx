@@ -1,11 +1,10 @@
 import Link from "next/link";
 
-export type SpendingCategory = "candidates" | "ballot-measures" | "electioneering";
+export type SpendingCategory = "candidates" | "ballot-measures";
 
 const TABS: { key: SpendingCategory; label: string; href: string }[] = [
   { key: "candidates", label: "Candidates", href: "/political-spending" },
   { key: "ballot-measures", label: "Ballot Measures", href: "/political-spending?category=ballot-measures" },
-  { key: "electioneering", label: "Electioneering", href: "/political-spending?category=electioneering" },
 ];
 
 export default function PoliticalSpendingTabs({ active }: { active: SpendingCategory }) {

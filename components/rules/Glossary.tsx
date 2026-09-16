@@ -17,7 +17,7 @@ const TERMS: { term: string; body: string }[] = [
   },
   {
     term: "Electioneering communication",
-    body: "An ad that names a candidate close to an election without expressly telling anyone how to vote, a separate legal category from an independent expenditure with its own disclosure rules.",
+    body: "An ad that names a candidate close to an election without expressly telling anyone how to vote, a separate legal category from an independent expenditure. Not tracked on this site: Montana stopped requiring this disclosure after a change in state law, and the FEC doesn't publish federal filings for it as itemized data the way it does for independent expenditures.",
   },
   {
     term: "Independent expenditure",
