@@ -273,20 +273,26 @@ async function processCandidateFinancials(
   if (!hasReports) return { contributions: [], totalRaised: 0, cashOnHand: 0 };
 
   const reportRows = await page.locator("table").first().locator("tbody tr").all();
-  const reports: { checkboxValue: string; from: string; to: string; type: string }[] = [];
-  const seenPeriods = new Set<string>();
+  // Keyed by period, like ingest-copp-ie.ts's own C6 report handling: a
+  // report superseded by a later amendment for the same period shouldn't
+  // be counted (or read for cashOnHand) as if it were still current.
+  // Map.set overwrites on a repeated key, so whichever row for a period
+  // is encountered *last* wins, matching that same reasoning here rather
+  // than the inverted "keep whichever came first" this used to do, which
+  // meant an amendment correcting a period's own numbers (ending cash
+  // included) was silently discarded in favor of the original it
+  // corrected, whenever the site happened to list the original first.
+  const reportsByPeriod = new Map<string, { checkboxValue: string; from: string; to: string; type: string }>();
   for (const row of reportRows.slice(0, MAX_REPORTS_PER_CANDIDATE)) {
     const checkboxValue = await row.locator("input.ace").first().getAttribute("value").catch(() => null);
     const tds = await row.locator("td").allInnerTexts();
     const [, from, to, , type] = tds;
     if (!checkboxValue || type?.trim() !== "C5") continue;
     const key = `${from?.trim()}-${to?.trim()}`;
-    if (seenPeriods.has(key)) continue;
-    seenPeriods.add(key);
-    reports.push({ checkboxValue, from: from?.trim() ?? "", to: to?.trim() ?? "", type: type?.trim() ?? "" });
+    reportsByPeriod.set(key, { checkboxValue, from: from?.trim() ?? "", to: to?.trim() ?? "", type: type?.trim() ?? "" });
   }
   // Most recent period first, so the first successfully-read ending cash wins.
-  reports.sort((a, b) => parseUsDate(b.to).getTime() - parseUsDate(a.to).getTime());
+  const reports = [...reportsByPeriod.values()].sort((a, b) => parseUsDate(b.to).getTime() - parseUsDate(a.to).getTime());
 
   const allContributions: RawContribution[] = [];
   let totalRaised = 0;
