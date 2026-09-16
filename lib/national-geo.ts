@@ -43,6 +43,22 @@ export function getStateFeatures(): StateFeature[] {
   return cached!;
 }
 
+let postalToNameCache: Record<string, string> | null = null;
+
+// Reuses getStateFeatures' own cache rather than re-walking the topology,
+// so the table fallback and the choropleth always agree on what a postal
+// code is called.
+export function getPostalToName(): Record<string, string> {
+  if (postalToNameCache) return postalToNameCache;
+  const map: Record<string, string> = {};
+  for (const f of getStateFeatures()) {
+    const name = f.properties?.name;
+    if (f.postal && typeof name === "string") map[f.postal] = name;
+  }
+  postalToNameCache = map;
+  return map;
+}
+
 /**
  * Single-hue sequential ramp for the choropleth, built from tokens already
  * in the design system (accent -> accent-hover) rather than an invented

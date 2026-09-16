@@ -27,7 +27,12 @@ export default function MontanaMapView({
 
   return (
     <div className="relative w-full">
-      <svg viewBox={`0 0 ${MAP_VIEWBOX.width} ${MAP_VIEWBOX.height}`} width="100%">
+      <svg
+        viewBox={`0 0 ${MAP_VIEWBOX.width} ${MAP_VIEWBOX.height}`}
+        width="100%"
+        role="img"
+        aria-label="Map of Montana with a circle at each city that has itemized contributions, sized by total amount. The largest cities are labeled directly; the Montana cities list beside this map covers the rest."
+      >
         <path d={pathD} fill="var(--color-ground-panel)" stroke="var(--color-border)" strokeWidth={1} />
         {unlabeledBubbles.map((b) => (
           <circle
