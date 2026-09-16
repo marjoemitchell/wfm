@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPoliticianBySlug } from "@/lib/queries";
-import { money, partyFullName, levelLabel } from "@/lib/format";
+import { moneyOrUnfiled, partyFullName, levelLabel } from "@/lib/format";
 import MoneySourceBand from "@/components/politician/MoneySourceBand";
 import SectorList from "@/components/politician/SectorList";
 import DonorList from "@/components/politician/DonorList";
@@ -52,11 +52,11 @@ export default async function OfficeholderPage(props: PageProps<"/officeholder/[
         </div>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
           <div>
-            <div className="text-stat-secondary text-ink">{money(politician.totalRaised)}</div>
+            <div className="text-stat-secondary text-ink">{moneyOrUnfiled(politician.totalRaised, politician.hasFilings)}</div>
             <div className="text-eyebrow mt-2 text-ink-tertiary">Total raised</div>
           </div>
           <div>
-            <div className="text-stat-secondary text-ink">{money(politician.cashOnHand)}</div>
+            <div className="text-stat-secondary text-ink">{moneyOrUnfiled(politician.cashOnHand, politician.hasFilings)}</div>
             <div className="text-eyebrow mt-2 text-ink-tertiary">Cash on hand</div>
           </div>
         </div>

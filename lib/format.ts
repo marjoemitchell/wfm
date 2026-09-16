@@ -12,6 +12,17 @@ export function money(value: { toString(): string } | number): string {
   return `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 }
 
+export const NO_FILINGS_LABEL = "No filings yet";
+
+// Distinguishes "this campaign genuinely reported $0" from "we have no
+// filing to read a number from at all": money() alone renders both as
+// a plain "$0", telling a reader nothing about which one they're
+// looking at. See Politician.hasFilings in the schema for how that gets
+// decided at ingest time.
+export function moneyOrUnfiled(value: { toString(): string } | number, hasFilings: boolean): string {
+  return hasFilings ? money(value) : NO_FILINGS_LABEL;
+}
+
 export function moneyAbbreviated(value: { toString(): string } | number): string {
   const n = toNumber(value);
   const abs = Math.abs(n);

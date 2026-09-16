@@ -40,6 +40,14 @@ model Politician {
   coppCandidateId String?       @unique
   totalRaised    Decimal        @db.Decimal(14, 2)
   cashOnHand     Decimal        @db.Decimal(14, 2)
+  // False only when ingest-copp.ts finds a candidate with no filed
+  // reports at all: totalRaised/cashOnHand are then a real 0, not "we
+  // don't know," but there's nothing behind that 0 to distinguish it
+  // from a candidate who filed and genuinely reported zero. FEC-sourced
+  // rows never set this false: ingest-fec.ts already skips a candidate
+  // entirely when OpenFEC has no totals record for the cycle, so every
+  // FEC row's totalRaised is backed by a real filing already.
+  hasFilings     Boolean        @default(true)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   contributions  Contribution[]

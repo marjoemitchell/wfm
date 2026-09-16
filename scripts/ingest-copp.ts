@@ -268,9 +268,9 @@ async function processCandidateFinancials(
   officeValue: string,
   year: number,
   candidateId: string
-): Promise<{ contributions: RawContribution[]; totalRaised: number; cashOnHand: number }> {
+): Promise<{ contributions: RawContribution[]; totalRaised: number; cashOnHand: number; hasFilings: boolean }> {
   const hasReports = await goToCandidateReportList(page, officeValue, year, candidateId);
-  if (!hasReports) return { contributions: [], totalRaised: 0, cashOnHand: 0 };
+  if (!hasReports) return { contributions: [], totalRaised: 0, cashOnHand: 0, hasFilings: false };
 
   const reportRows = await page.locator("table").first().locator("tbody tr").all();
   // Keyed by period, like ingest-copp-ie.ts's own C6 report handling: a
@@ -325,7 +325,7 @@ async function processCandidateFinancials(
     }
   }
 
-  return { contributions: allContributions, totalRaised, cashOnHand };
+  return { contributions: allContributions, totalRaised, cashOnHand, hasFilings: true };
 }
 
 const donorIdCache = new Map<string, string>();
@@ -408,7 +408,7 @@ async function main() {
         for (let attempt = 1; attempt <= 2; attempt++) {
           try {
             const party = await getParty(page, office.value, year, candidate.id);
-            const { contributions, totalRaised, cashOnHand } = await processCandidateFinancials(page, office.value, year, candidate.id);
+            const { contributions, totalRaised, cashOnHand, hasFilings } = await processCandidateFinancials(page, office.value, year, candidate.id);
 
             const { display: name, sortName } = parseLastFirstName(candidate.name);
             const slug = await resolveUniqueSlug(slugify(name), async (s) => {
@@ -432,6 +432,7 @@ async function main() {
                 coppCandidateId: candidate.id,
                 totalRaised,
                 cashOnHand,
+                hasFilings,
               },
               update: {
                 slug,
@@ -444,6 +445,7 @@ async function main() {
                 source: "MT_COPP",
                 totalRaised,
                 cashOnHand,
+                hasFilings,
               },
             });
 

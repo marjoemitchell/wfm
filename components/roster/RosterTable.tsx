@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { money, percent, rank, levelLabel } from "@/lib/format";
+import { money, percent, rank, levelLabel, NO_FILINGS_LABEL } from "@/lib/format";
 import PartyChip from "./PartyChip";
 import { buildRosterHref } from "./FilterBar";
 import type { Party, Level } from "@/lib/generated/prisma/enums";
@@ -53,6 +53,7 @@ export type RosterRowData = {
   party: Party;
   level: Level;
   totalRaised: number;
+  hasFilings: boolean;
   outsideSupport: number;
   inStatePct: number;
   topSector: string;
@@ -202,7 +203,17 @@ export default function RosterTable({ rows }: { rows: RosterRowData[] }) {
                 In-state {percent(row.inStatePct)}
               </div>
             </div>
-            <div className="text-roster-amount text-right tabular-nums text-ink">{money(displayTotal)}</div>
+            <div className="text-right">
+              {/* Falls through to a plain money() render the moment there's
+                  any real dollar figure to show, outside spending included,
+                  so this only ever replaces a genuinely unbacked $0, never
+                  a candidate's own real numbers. */}
+              {!row.hasFilings && displayTotal === 0 ? (
+                <span className="text-[15.6px] italic text-ink-quiet">{NO_FILINGS_LABEL}</span>
+              ) : (
+                <span className="text-roster-amount tabular-nums text-ink">{money(displayTotal)}</span>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => toggle(row.slug)}

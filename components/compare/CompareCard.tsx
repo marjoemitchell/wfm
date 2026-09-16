@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { money, percent } from "@/lib/format";
+import { money, moneyOrUnfiled, percent } from "@/lib/format";
 import type { Party } from "@/lib/generated/prisma/enums";
 
 const PARTY_COLOR: Record<Party, string> = {
@@ -10,7 +10,7 @@ const PARTY_COLOR: Record<Party, string> = {
 const PARTY_LABEL: Record<Party, string> = { R: "REP", D: "DEM", N: "NONPARTISAN" };
 
 export type CompareCardData = {
-  politician: { slug: string; name: string; office: string; party: Party; totalRaised: number; cashOnHand: number };
+  politician: { slug: string; name: string; office: string; party: Party; totalRaised: number; cashOnHand: number; hasFilings: boolean };
   totalRaisedShare: number;
   inStatePct: number;
   pacPct: number;
@@ -26,8 +26,18 @@ export default function CompareCard({ data, onRemove }: { data: CompareCardData;
   const { politician } = data;
 
   const metrics = [
-    { label: "Total raised", value: money(politician.totalRaised), pct: data.totalRaisedShare * 100, color: "var(--color-ink)" },
-    { label: "Cash on hand", value: money(politician.cashOnHand), pct: politician.totalRaised > 0 ? (politician.cashOnHand / politician.totalRaised) * 100 : 0, color: "var(--color-ink-secondary)" },
+    {
+      label: "Total raised",
+      value: moneyOrUnfiled(politician.totalRaised, politician.hasFilings),
+      pct: politician.hasFilings ? data.totalRaisedShare * 100 : 0,
+      color: "var(--color-ink)",
+    },
+    {
+      label: "Cash on hand",
+      value: moneyOrUnfiled(politician.cashOnHand, politician.hasFilings),
+      pct: politician.hasFilings && politician.totalRaised > 0 ? (politician.cashOnHand / politician.totalRaised) * 100 : 0,
+      color: "var(--color-ink-secondary)",
+    },
     { label: "In-state", value: percent(data.inStatePct), pct: data.inStatePct, color: "var(--color-accent)" },
     { label: "PAC share", value: percent(data.pacPct), pct: data.pacPct, color: "var(--color-gold)" },
     { label: "Out-of-state", value: percent(data.outOfStatePct), pct: data.outOfStatePct, color: "var(--color-party-d)" },

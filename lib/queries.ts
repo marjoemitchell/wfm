@@ -106,7 +106,7 @@ async function getRosterUncached(params: { level?: string; sort?: RosterSort; qu
           }
         : {}),
     },
-    select: { id: true, slug: true, name: true, sortName: true, office: true, party: true, level: true, totalRaised: true },
+    select: { id: true, slug: true, name: true, sortName: true, office: true, party: true, level: true, totalRaised: true, hasFilings: true },
   });
 
   const derived = await withInStatePct(politicians);
