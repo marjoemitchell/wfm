@@ -1,6 +1,7 @@
-import { getOutsideSpenders } from "@/lib/queries";
+import { getOutsideSpenders, getBallotMeasureSpenders } from "@/lib/queries";
 import { moneyAbbreviated } from "@/lib/format";
 import OutsideSpenderRow from "@/components/industries/OutsideSpenderRow";
+import BallotMeasureSpenderRow from "@/components/political-spending/BallotMeasureSpenderRow";
 import PoliticalSpendingTabs, { type SpendingCategory } from "@/components/political-spending/PoliticalSpendingTabs";
 
 const HEADERS: Record<SpendingCategory, { title: string; body: string }> = {
@@ -10,7 +11,7 @@ const HEADERS: Record<SpendingCategory, { title: string; body: string }> = {
   },
   "ballot-measures": {
     title: "Ballot measure spending",
-    body: "Money spent supporting or opposing a ballot measure. Legally distinct from candidate spending, since there's no candidate's own committee for a measure to coordinate with in the first place.",
+    body: "Money spent supporting or opposing a statewide ballot measure (a Constitutional Initiative, statutory Initiative, or Legislative Referendum). A local levy or bond isn't included here: it's filed as free text with no official code, and the same measure shows up spelled a few different ways across filings with nothing to reconcile them against.",
   },
   electioneering: {
     title: "Electioneering communications",
@@ -26,7 +27,11 @@ export default async function PoliticalSpendingPage(props: PageProps<"/political
       : "candidates";
 
   const header = HEADERS[category];
-  const { rows, trackedTotal } = category === "candidates" ? await getOutsideSpenders() : { rows: [], trackedTotal: 0 };
+  const { rows: candidateRows, trackedTotal: candidateTotal } =
+    category === "candidates" ? await getOutsideSpenders() : { rows: [], trackedTotal: 0 };
+  const { rows: ballotRows, trackedTotal: ballotTotal } =
+    category === "ballot-measures" ? await getBallotMeasureSpenders() : { rows: [], trackedTotal: 0 };
+  const trackedTotal = category === "candidates" ? candidateTotal : category === "ballot-measures" ? ballotTotal : 0;
 
   return (
     <div>
@@ -43,17 +48,29 @@ export default async function PoliticalSpendingPage(props: PageProps<"/political
 
       <PoliticalSpendingTabs active={category} />
 
-      {category === "candidates" ? (
-        rows.length === 0 ? (
+      {category === "candidates" &&
+        (candidateRows.length === 0 ? (
           <div className="py-[70px] text-center text-[18px] text-ink-quiet">No independent expenditures tracked yet.</div>
         ) : (
           <div>
-            {rows.map((row, i) => (
+            {candidateRows.map((row, i) => (
               <OutsideSpenderRow key={row.slug} row={row} index={i} />
             ))}
           </div>
-        )
-      ) : (
+        ))}
+
+      {category === "ballot-measures" &&
+        (ballotRows.length === 0 ? (
+          <div className="py-[70px] text-center text-[18px] text-ink-quiet">No ballot-measure spending tracked yet.</div>
+        ) : (
+          <div>
+            {ballotRows.map((row, i) => (
+              <BallotMeasureSpenderRow key={row.slug} row={row} index={i} />
+            ))}
+          </div>
+        ))}
+
+      {category === "electioneering" && (
         <div className="py-[70px] text-center text-[18px] text-ink-quiet">
           Not tracked yet, on the list for a future update.
         </div>

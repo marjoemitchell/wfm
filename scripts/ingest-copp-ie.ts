@@ -14,9 +14,18 @@
  * This only attaches expenditures to Politicians that ingest-copp.ts has
  * already created (matched by name/office/district parsed out of the
  * filing's free-text "Candidate/Issue" field); it never creates new
- * Politicians itself, so run ingest-copp.ts first. Money aimed at a ballot
- * issue rather than a candidate, or naming a candidate we haven't ingested
- * (wrong cycle, local office, etc.), is skipped and counted in the summary.
+ * Politicians itself, so run ingest-copp.ts first. A candidate we haven't
+ * ingested (wrong cycle, local office, etc.) is skipped and counted in the
+ * summary rather than guessed at.
+ *
+ * Money aimed at a *statewide* ballot measure instead of a candidate is
+ * still captured, as a BallotMeasureExpenditure, but only when the
+ * filing's own "Candidate/Issue" text is nothing but a recognized code
+ * (CI-###, I-###, LR-###; see splitBallotEntries). A local levy or bond
+ * has no such code, just free text that spells the same measure a few
+ * different ways across filings with no registry to reconcile them
+ * against, so those are deliberately left uningested rather than invented
+ * as several different fake measures (see the BallotMeasure model itself).
  *
  * Both the independent-expenditure line items and the contribution
  * schedules come from the same `financeRepDetailList` DataTables JSON
@@ -396,6 +405,73 @@ function splitEntries(candidateIssueRaw: string, purposeDescr: string, totalAmt:
   return entries.map((entry, i) => ({ entry, amount: dollarAmounts[i], text: texts ? texts[i] : purposeDescr }));
 }
 
+// Montana's own three statewide ballot-measure types, by their official
+// prefix: Constitutional Initiative (CI), statutory Initiative (I), and
+// Legislative Referendum (LR). A local levy or bond has no such code (see
+// the BallotMeasure model's own comment for why those are deliberately
+// left out entirely, not just normalized differently).
+const BALLOT_CODE_RE = /^(CI|LR|I)[\s-]?(\d+)$/i;
+
+function normalizeBallotCode(token: string): string | null {
+  const match = BALLOT_CODE_RE.exec(token.trim());
+  return match ? `${match[1].toUpperCase()}-${match[2]}` : null;
+}
+
+// candidateIssue is only ever treated as ballot-measure targeting when
+// every comma/semicolon/"and"-separated piece of it is a recognized code
+// ("I-190, CI-118, LR-130" seen live); a candidate name, a local levy's
+// free-text description, or garbage test data ("John Doe") leaves this
+// returning null so the caller falls through to the candidate-matching
+// path instead, never partially parsed. A non-null empty array means the
+// opposite problem: it's unambiguously ballot-measure text, but with
+// multiple codes and no reliable way to split the total between them
+// (same reasoning as splitEntries above), so the caller counts that
+// separately rather than silently treating it as unmatched.
+function splitBallotEntries(
+  candidateIssueRaw: string,
+  purposeDescr: string,
+  totalAmt: number
+): { code: string; amount: number; text: string }[] | null {
+  const rawEntries = candidateIssueRaw
+    .split(/[,;]|\band\b/i)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (rawEntries.length === 0) return null;
+  const codes = rawEntries.map(normalizeBallotCode);
+  if (codes.some((c) => c === null)) return null;
+  const validCodes = codes as string[];
+
+  if (validCodes.length === 1) return [{ code: validCodes[0], amount: totalAmt, text: purposeDescr }];
+
+  const dollarAmounts = [...purposeDescr.matchAll(/\$([\d,]+\.\d{2})/g)].map((m) => Number(m[1].replace(/,/g, "")));
+  if (dollarAmounts.length !== validCodes.length) return [];
+  if (Math.abs(dollarAmounts.reduce((a, b) => a + b, 0) - totalAmt) > 0.02) return [];
+
+  const parenClauses = [...purposeDescr.matchAll(/\(([^)]+)\)/g)].map((m) => m[1]);
+  const semicolonClauses = purposeDescr
+    .split(";")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const texts =
+    parenClauses.length === validCodes.length ? parenClauses : semicolonClauses.length === validCodes.length ? semicolonClauses : null;
+
+  return validCodes.map((code, i) => ({ code, amount: dollarAmounts[i], text: texts ? texts[i] : purposeDescr }));
+}
+
+const ballotMeasureIdCache = new Map<string, string>();
+
+async function upsertBallotMeasure(code: string): Promise<string> {
+  const cached = ballotMeasureIdCache.get(code);
+  if (cached) return cached;
+  const measure = await db.ballotMeasure.upsert({
+    where: { code },
+    create: { code, slug: slugify(code) },
+    update: {},
+  });
+  ballotMeasureIdCache.set(code, measure.id);
+  return measure.id;
+}
+
 // Montana's C-6 independent-expenditure grid has no structured
 // support/oppose field at all (confirmed against the live API response
 // shape); filers only narrate it in free text. Beyond direct sentiment
@@ -462,6 +538,15 @@ async function main() {
     date: Date;
     funderDonorId: string | null;
   }[] = [];
+  const ballotMeasureRows: {
+    ballotMeasureId: string;
+    donorId: string;
+    amount: number;
+    date: Date;
+    support: boolean | null;
+    description: string | null;
+    payee: string | null;
+  }[] = [];
   const processedDonorIds = new Set<string>();
   // Filled in as committees are processed below (by their own registered
   // name, lowercased), then applied to fundingRows in one pass at the end
@@ -478,6 +563,11 @@ async function main() {
   let unresolvedSplitAmt = 0;
   let unclearDirection = 0;
   let unclearDirectionAmt = 0;
+  let ballotMeasureItemCount = 0;
+  let ballotMeasureUnresolvedSplit = 0;
+  let ballotMeasureUnresolvedSplitAmt = 0;
+  let ballotMeasureUnclearDirection = 0;
+  let ballotMeasureUnclearDirectionAmt = 0;
   let discoveredCount = 0;
 
   const searchedFunderNames = new Set<string>();
@@ -565,6 +655,35 @@ async function main() {
           continue;
         }
 
+        const ballotParts = splitBallotEntries(candidateIssueRaw, item.purposeDescr ?? "", totalAmt);
+        if (ballotParts !== null) {
+          ballotMeasureItemCount++;
+          if (ballotParts.length === 0) {
+            ballotMeasureUnresolvedSplit++;
+            ballotMeasureUnresolvedSplitAmt += totalAmt;
+            console.warn(`  unresolved multi-measure split for "${committee.committeeName}": "${candidateIssueRaw}" ($${totalAmt})`);
+            continue;
+          }
+          for (const part of ballotParts) {
+            const ballotMeasureId = await upsertBallotMeasure(part.code);
+            const { support, explicit } = inferSupport(part.text);
+            if (!explicit) {
+              ballotMeasureUnclearDirection++;
+              ballotMeasureUnclearDirectionAmt += part.amount;
+            }
+            ballotMeasureRows.push({
+              ballotMeasureId,
+              donorId,
+              amount: part.amount,
+              date: new Date(item.datePaid),
+              support: explicit ? support : null,
+              description: item.purposeDescr?.trim() || null,
+              payee: item.entityName?.trim() || null,
+            });
+          }
+          continue;
+        }
+
         const parts = splitEntries(candidateIssueRaw, item.purposeDescr ?? "", totalAmt);
         if (parts.length === 0) {
           unresolvedSplit++;
@@ -625,16 +744,26 @@ async function main() {
   console.log(`  direction unclear (no explicit support/oppose language): ${unclearDirection} of ${rows.length} matched rows, $${unclearDirectionAmt.toFixed(0)}`);
   console.log(`\nParsed ${fundingRows.length} committee funding rows across ${processedDonorIds.size} committees (${discoveredCount} discovered as pass-through funders, not from the independent-expenditure search).`);
   console.log(`  ${linkedFunderCount} of those rows link to a funder we also track as its own committee.`);
+  console.log(`\nParsed ${ballotMeasureItemCount} ballot-measure line items across ${new Set(ballotMeasureRows.map((r) => r.ballotMeasureId)).size} measures.`);
+  console.log(`  multi-measure line item, couldn't verify split: ${ballotMeasureUnresolvedSplit} items, $${ballotMeasureUnresolvedSplitAmt.toFixed(0)}`);
+  console.log(`  direction unclear (no explicit support/oppose language): ${ballotMeasureUnclearDirection} of ${ballotMeasureRows.length} matched rows, $${ballotMeasureUnclearDirectionAmt.toFixed(0)}`);
 
   await db.$transaction([
     db.independentExpenditure.deleteMany({ where: { politicianId: { in: politicians.map((p) => p.id) } } }),
     ...(rows.length ? [db.independentExpenditure.createMany({ data: rows })] : []),
     db.committeeFunding.deleteMany({ where: { committeeId: { in: [...processedDonorIds] } } }),
     ...(fundingRows.length ? [db.committeeFunding.createMany({ data: fundingRows })] : []),
+    // Unconditional, not scoped like committeeFunding above: every
+    // BallotMeasureExpenditure row comes from this same script, there's
+    // no other ingest sharing the table the way ingest-copp.ts shares
+    // Donor, so a full replace each run can't strand anything stale.
+    db.ballotMeasureExpenditure.deleteMany({}),
+    ...(ballotMeasureRows.length ? [db.ballotMeasureExpenditure.createMany({ data: ballotMeasureRows })] : []),
   ]);
 
   console.log(`\nDone. Wrote ${rows.length} independent expenditures across ${new Set(rows.map((r) => r.politicianId)).size} politicians.`);
   console.log(`Wrote ${fundingRows.length} committee funding rows across ${new Set(fundingRows.map((f) => f.committeeId)).size} committees.`);
+  console.log(`Wrote ${ballotMeasureRows.length} ballot-measure expenditure rows across ${new Set(ballotMeasureRows.map((r) => r.ballotMeasureId)).size} measures.`);
   await browser.close();
 }
 

@@ -467,6 +467,56 @@ export const getOutsideSpenders = unstable_cache(
   { revalidate: 3600 }
 );
 
+export const getBallotMeasureSpenders = unstable_cache(
+  async () => {
+    const expenditures = await db.ballotMeasureExpenditure.findMany({
+      select: {
+        amount: true,
+        donor: { select: { id: true, slug: true, name: true } },
+        ballotMeasure: { select: { slug: true, code: true } },
+      },
+    });
+
+    const byDonor = new Map<
+      string,
+      { slug: string; name: string; total: number; measureSlugs: Set<string>; byMeasure: Map<string, { code: string; slug: string; amount: number }> }
+    >();
+    for (const ie of expenditures) {
+      const amt = toNumber(ie.amount);
+      const key = ie.donor.id;
+      if (!byDonor.has(key)) {
+        byDonor.set(key, { slug: ie.donor.slug, name: ie.donor.name, total: 0, measureSlugs: new Set(), byMeasure: new Map() });
+      }
+      const bucket = byDonor.get(key)!;
+      bucket.total += amt;
+      bucket.measureSlugs.add(ie.ballotMeasure.slug);
+      const existing = bucket.byMeasure.get(ie.ballotMeasure.slug);
+      if (existing) existing.amount += amt;
+      else bucket.byMeasure.set(ie.ballotMeasure.slug, { code: ie.ballotMeasure.code, slug: ie.ballotMeasure.slug, amount: amt });
+    }
+
+    const trackedTotal = [...byDonor.values()].reduce((sum, b) => sum + b.total, 0);
+
+    const rows = [...byDonor.values()]
+      .map((bucket) => {
+        const topMeasure = [...bucket.byMeasure.values()].sort((a, b) => b.amount - a.amount)[0];
+        return {
+          slug: bucket.slug,
+          name: bucket.name,
+          total: bucket.total,
+          share: trackedTotal > 0 ? (bucket.total / trackedTotal) * 100 : 0,
+          measureCount: bucket.measureSlugs.size,
+          topMeasure: topMeasure ? { code: topMeasure.code } : null,
+        };
+      })
+      .sort((a, b) => b.total - a.total);
+
+    return { rows, trackedTotal };
+  },
+  ["ballot-measure-spenders"],
+  { revalidate: 3600 }
+);
+
 export async function getSectorBySlug(slug: string) {
   // Sector is a plain string on Donor, not its own model with a stored
   // slug, so match by slugifying each distinct value rather than a WHERE.

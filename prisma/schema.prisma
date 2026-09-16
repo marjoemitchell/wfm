@@ -72,6 +72,7 @@ model Donor {
   jfcParticipants      Json?
   contributions        Contribution[]
   independentExpenditures IndependentExpenditure[]
+  ballotMeasureExpenditures BallotMeasureExpenditure[]
   fundingReceived      CommitteeFunding[] @relation("CommitteeFundingRecipient")
   fundingGiven         CommitteeFunding[] @relation("CommitteeFundingFunder")
 
@@ -116,6 +117,45 @@ model IndependentExpenditure {
   donor        Donor      @relation(fields: [donorId], references: [id], onDelete: Cascade)
 
   @@index([politicianId])
+  @@index([donorId])
+}
+
+// A Montana statewide ballot measure (Constitutional Initiative,
+// statutory Initiative, or Legislative Referendum), identified only by
+// its official code (e.g. "LR-130", "CI-128", "I-190"). MT_COPP only:
+// deliberately scoped to measures with a real assigned code, never a
+// locally-invented name, since a local levy or bond is filed as free
+// text with no canonical form (the same measure shows up phrased three
+// or four different ways across filings) and there is no registry to
+// resolve that against; fabricating one canonical spelling would just be
+// a guess. Those stay out of this table entirely rather than risk being
+// counted as several different fake measures.
+model BallotMeasure {
+  id                      String                     @id @default(cuid())
+  slug                    String                     @unique
+  // Normalized display form, e.g. "LR-130". Same value the slug derives
+  // from; kept separate so the slug's own format (lowercase, URL-safe)
+  // never has to leak into anywhere the code is actually displayed.
+  code                    String                     @unique
+  independentExpenditures BallotMeasureExpenditure[]
+}
+
+// Same shape as IndependentExpenditure, just aimed at a ballot measure
+// instead of a candidate; see BallotMeasure for why this only exists for
+// measures with a real assigned code.
+model BallotMeasureExpenditure {
+  id              String        @id @default(cuid())
+  ballotMeasureId String
+  donorId         String
+  amount          Decimal       @db.Decimal(12, 2)
+  date            DateTime
+  support         Boolean?
+  description     String?
+  payee           String?
+  ballotMeasure   BallotMeasure @relation(fields: [ballotMeasureId], references: [id], onDelete: Cascade)
+  donor           Donor         @relation(fields: [donorId], references: [id], onDelete: Cascade)
+
+  @@index([ballotMeasureId])
   @@index([donorId])
 }
 
