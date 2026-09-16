@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { getOutsideSpenders, getBallotMeasureSpenders } from "@/lib/queries";
 import { moneyAbbreviated } from "@/lib/format";
 import OutsideSpenderRow from "@/components/industries/OutsideSpenderRow";
@@ -19,12 +20,21 @@ const HEADERS: Record<SpendingCategory, { title: string; body: string }> = {
   },
 };
 
+function resolveCategory(searchParams: { category?: string | string[] }): SpendingCategory {
+  return searchParams.category === "ballot-measures" || searchParams.category === "electioneering"
+    ? searchParams.category
+    : "candidates";
+}
+
+export async function generateMetadata(props: PageProps<"/political-spending">): Promise<Metadata> {
+  const searchParams = await props.searchParams;
+  const { title, body } = HEADERS[resolveCategory(searchParams)];
+  return { title, description: body };
+}
+
 export default async function PoliticalSpendingPage(props: PageProps<"/political-spending">) {
   const searchParams = await props.searchParams;
-  const category: SpendingCategory =
-    searchParams.category === "ballot-measures" || searchParams.category === "electioneering"
-      ? searchParams.category
-      : "candidates";
+  const category = resolveCategory(searchParams);
 
   const header = HEADERS[category];
   const { rows: candidateRows, trackedTotal: candidateTotal } =

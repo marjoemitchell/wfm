@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getAllPoliticiansForPicker, getComparePoliticians } from "@/lib/queries";
 import CompareSlots from "@/components/compare/CompareSlots";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Side by Side",
+  description: "Compare up to four officeholders' fundraising side by side.",
+};
 
 export default async function ComparePage(props: PageProps<"/compare">) {
   const searchParams = await props.searchParams;

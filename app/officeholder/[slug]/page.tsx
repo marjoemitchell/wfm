@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getPoliticianBySlug } from "@/lib/queries";
@@ -6,6 +7,17 @@ import MoneySourceBand from "@/components/politician/MoneySourceBand";
 import SectorList from "@/components/politician/SectorList";
 import DonorList from "@/components/politician/DonorList";
 import RecordView from "@/components/officeholder/RecordView";
+
+export async function generateMetadata(props: PageProps<"/officeholder/[slug]">): Promise<Metadata> {
+  const { slug } = await props.params;
+  const data = await getPoliticianBySlug(slug);
+  if (!data) return {};
+  const { politician } = data;
+  return {
+    title: politician.name,
+    description: `${politician.office} · ${politician.cycle} cycle: where ${politician.name}'s campaign money comes from.`,
+  };
+}
 
 const PARTY_COLOR: Record<string, string> = {
   R: "var(--color-party-r)",

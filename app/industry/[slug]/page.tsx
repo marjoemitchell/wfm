@@ -1,8 +1,19 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSectorBySlug } from "@/lib/queries";
 import { money } from "@/lib/format";
 import SectorDonorList from "@/components/industries/SectorDonorList";
+
+export async function generateMetadata(props: PageProps<"/industry/[slug]">): Promise<Metadata> {
+  const { slug } = await props.params;
+  const data = await getSectorBySlug(slug);
+  if (!data) return {};
+  return {
+    title: data.sector,
+    description: `${money(data.total)} in contributions from the ${data.sector} sector, across every officeholder this tracker covers.`,
+  };
+}
 
 export default async function IndustryPage(props: PageProps<"/industry/[slug]">) {
   const { slug } = await props.params;

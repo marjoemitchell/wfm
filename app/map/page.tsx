@@ -1,9 +1,15 @@
+import type { Metadata } from "next";
 import { getMapData } from "@/lib/queries";
 import { money } from "@/lib/format";
 import MontanaMap from "@/components/map/MontanaMap";
 import NationalMap from "@/components/map/NationalMap";
 import SplitBar from "@/components/map/SplitBar";
 import LocationList from "@/components/map/LocationList";
+
+export const metadata: Metadata = {
+  title: "Where the Donors Are",
+  description: "Every itemized contribution, placed at the giver's mailing address.",
+};
 
 export default async function MapPage() {
   const { montanaCities, states, topMetros, inStateTotal, outOfStateTotal, inStatePct } = await getMapData();

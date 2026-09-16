@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { FOOTNOTE_TEXT_PREFIX } from "@/lib/contribution-limits";
 import FederalLimitsTable from "@/components/rules/FederalLimitsTable";
 import StateLimitsTable from "@/components/rules/StateLimitsTable";
+
+export const metadata: Metadata = {
+  title: "How the Money Moves",
+  description: "Federal and Montana state contribution limits, committee types, and how disclosure gaps happen.",
+};
 
 export default function RulesPage() {
   return (

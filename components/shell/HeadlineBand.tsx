@@ -12,9 +12,9 @@ export default function HeadlineBand({
   medianInState: number;
 }) {
   const cells = [
-    { value: String(officeholders), label: "On the roster", note: "Officeholders and candidates, federal to judicial" },
+    { value: officeholders.toLocaleString("en-US"), label: "On the roster", note: "Officeholders and candidates, federal to judicial" },
     { value: moneyAbbreviated(trackedMoney), label: "Tracked money", note: "Across all listed campaigns" },
-    { value: String(namedDonors), label: "Named donors", note: "Individuals, PACs and committees" },
+    { value: namedDonors.toLocaleString("en-US"), label: "Named donors", note: "Individuals, PACs and committees" },
     { value: percent(medianInState), label: "Median in-state", note: "Share of itemized contributions" },
   ];
 

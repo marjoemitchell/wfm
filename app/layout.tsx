@@ -19,10 +19,26 @@ const archivo = Archivo({
   variable: "--font-sans-src",
 });
 
+const SITE_DESCRIPTION = "Tracking Montana officeholders and where their campaign money comes from.";
+
+// Every page inherits this unless it sets its own title/description below
+// (a plain `title` string here fills the %s; openGraph/twitter carry over
+// to any page that doesn't override them, so a shared link previews
+// something real even for a page that never sets its own).
 export const metadata: Metadata = {
-  title: "Who Funds Montana",
-  description:
-    "Tracking Montana officeholders and where their campaign money comes from.",
+  title: { default: "Who Funds Montana", template: "%s | Who Funds Montana" },
+  description: SITE_DESCRIPTION,
+  openGraph: {
+    siteName: "Who Funds Montana",
+    description: SITE_DESCRIPTION,
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary",
+    title: "Who Funds Montana",
+    description: SITE_DESCRIPTION,
+  },
 };
 
 // Every page (including the built-in /_not-found) renders inside this

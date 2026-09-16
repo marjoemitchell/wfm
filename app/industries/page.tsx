@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { getIndustries } from "@/lib/queries";
 import { moneyAbbreviated } from "@/lib/format";
 import IndustryRow from "@/components/industries/IndustryRow";
+
+export const metadata: Metadata = {
+  title: "Money by Industry",
+  description: "Contributions aggregated by industry across every officeholder this tracker covers.",
+};
 
 export default async function IndustriesPage() {
   const { rows, trackedTotal } = await getIndustries();

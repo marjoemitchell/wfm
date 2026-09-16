@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDonorBySlug, getPoliticianNameBySlug } from "@/lib/queries";
@@ -5,6 +6,17 @@ import { money } from "@/lib/format";
 import RecipientList from "@/components/donor/RecipientList";
 import IndependentExpenditureCandidateList from "@/components/donor/IndependentExpenditureCandidateList";
 import FundedByList from "@/components/donor/FundedByList";
+
+export async function generateMetadata(props: PageProps<"/donor/[slug]">): Promise<Metadata> {
+  const { slug } = await props.params;
+  const data = await getDonorBySlug(slug);
+  if (!data) return {};
+  const { donor } = data;
+  return {
+    title: donor.name,
+    description: `${donor.city}, ${donor.state}: who ${donor.name} funds, and who funds them.`,
+  };
+}
 
 export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
   const { slug } = await props.params;
