@@ -52,6 +52,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${playfair.variable} ${archivo.variable}`}>
       <body className="min-h-screen flex flex-col bg-ground text-ink">
+        <a href="#main-content" className="skip-link">
+          Skip to content
+        </a>
         <div className="mx-auto w-full max-w-[1320px] px-4 sm:px-10 flex-1 flex flex-col">
           <Masthead />
           <HeadlineBand
@@ -61,7 +64,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             medianInState={stats.medianInState}
           />
           <Nav />
-          <main className="flex-1">{children}</main>
+          <main id="main-content" className="flex-1">
+            {children}
+          </main>
           <Footer />
         </div>
       </body>

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
-import SupportButton from "@/components/shell/SupportButton";
 
 const TABS = [
   { href: "/", label: "Roster", match: (p: string) => p === "/" || p.startsWith("/officeholder") || p.startsWith("/donor") },
@@ -61,8 +60,6 @@ export default function Nav() {
           </Link>
         );
       })}
-      <span className="flex-1" />
-      <SupportButton />
     </nav>
   );
 }

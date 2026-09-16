@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Logo from "@/components/shell/Logo";
+import SupportButton from "@/components/shell/SupportButton";
 
 export default function Masthead() {
   const router = useRouter();
@@ -37,15 +38,18 @@ export default function Masthead() {
           2026 cycle
         </p>
       </div>
-      <div className="flex w-full min-w-0 flex-[0_1_340px] items-center gap-2 border-b border-border pb-2 sm:w-auto sm:min-w-[300px]">
-        <span className="text-accent text-[16.8px] leading-none">⌕</span>
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="Search names, offices, industries"
-          className="w-full bg-transparent text-[19.2px] text-ink placeholder-ink-quiet outline-none"
-        />
+      <div className="flex w-full min-w-0 flex-col items-end gap-3 sm:w-auto">
+        <SupportButton />
+        <div className="flex w-full min-w-0 flex-[0_1_340px] items-center gap-2 border-b border-border pb-2 sm:w-auto sm:min-w-[300px]">
+          <span className="text-accent text-[16.8px] leading-none">⌕</span>
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Search names, offices, industries"
+            className="w-full bg-transparent text-[19.2px] text-ink placeholder-ink-quiet outline-none"
+          />
+        </div>
       </div>
     </header>
   );
