@@ -38,7 +38,7 @@ export default function Masthead() {
           2026 cycle
         </p>
       </div>
-      <div className="flex w-full min-w-0 flex-wrap items-center justify-end gap-4 sm:w-auto">
+      <div className="flex w-full min-w-0 flex-wrap items-center justify-center gap-4 sm:w-auto sm:justify-end">
         <SupportButton />
         <div className="flex w-full min-w-0 flex-[0_1_340px] items-center gap-2 border-b border-border pb-2 sm:w-auto sm:min-w-[300px]">
           <span className="text-accent text-[16.8px] leading-none">⌕</span>
