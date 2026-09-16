@@ -26,6 +26,12 @@ export default function SplitBar({
       <p className="mt-3 text-[17.4px] text-ink-tertiary">
         Montana addresses account for <span className="text-ink">{percent(inStatePct, 1)}</span> of tracked money.
       </p>
+      <p className="mt-2 text-[14.4px] text-ink-faint">
+        That&apos;s a dollar-weighted share across every contribution, not the &quot;Median in-state&quot; figure at
+        the top of every page: a median treats each officeholder&apos;s own percentage equally, so a handful of
+        races dominated by out-of-state money can pull this dollar figure well below that median without changing
+        it.
+      </p>
     </div>
   );
 }

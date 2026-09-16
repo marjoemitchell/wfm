@@ -233,6 +233,7 @@ export async function getPoliticianBySlug(slug: string) {
     inStatePct: itemizedTotal > 0 ? (inState / itemizedTotal) * 100 : 0,
     pacPct: itemizedTotal > 0 ? (pacAmount / itemizedTotal) * 100 : 0,
     hasItemizedContributions: itemizedTotal > 0,
+    itemizedTotal,
     sectors,
     topDonors,
     outsideSpending: { supportTotal, opposeTotal, unclearTotal, spenders: outsideSpenders },
