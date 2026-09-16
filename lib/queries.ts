@@ -418,6 +418,36 @@ export const getIndustries = unstable_cache(
   { revalidate: 3600 }
 );
 
+// A separate question from "which industry": whether the money came from
+// a named individual or a PAC/committee. Built off Contribution.isPac
+// directly (set from the filing's own committee-type column at ingest
+// time) rather than sector-crosswalk's keyword-matched "Political
+// Committees" bucket, which only catches a donor whose employer/occupation
+// text happens to contain "pac"/"committee"/"party" and can both miss and
+// misfire; isPac is the authoritative field the same per-candidate stat
+// (MoneySourceBand) already relies on, just aggregated sitewide here.
+export const getMoneyBySourceType = unstable_cache(
+  async () => {
+    const contributions = await db.contribution.findMany({ select: { amount: true, isPac: true } });
+    let individualTotal = 0;
+    let pacTotal = 0;
+    for (const c of contributions) {
+      const amt = toNumber(c.amount);
+      if (c.isPac) pacTotal += amt;
+      else individualTotal += amt;
+    }
+    const total = individualTotal + pacTotal;
+    return {
+      individualTotal,
+      pacTotal,
+      individualPct: total > 0 ? (individualTotal / total) * 100 : 0,
+      pacPct: total > 0 ? (pacTotal / total) * 100 : 0,
+    };
+  },
+  ["money-by-source-type"],
+  { revalidate: 3600 }
+);
+
 export const getOutsideSpenders = unstable_cache(
   async () => {
     const expenditures = await db.independentExpenditure.findMany({
