@@ -10,11 +10,11 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
   const { slug } = await props.params;
   const searchParams = await props.searchParams;
   const fromSlug = typeof searchParams.from === "string" ? searchParams.from : null;
-  const fromOutsideSpending = fromSlug === "outside-spending";
+  const fromPoliticalSpending = fromSlug === "political-spending";
 
   const [data, from] = await Promise.all([
     getDonorBySlug(slug),
-    fromSlug && !fromOutsideSpending ? getPoliticianNameBySlug(fromSlug) : Promise.resolve(null),
+    fromSlug && !fromPoliticalSpending ? getPoliticianNameBySlug(fromSlug) : Promise.resolve(null),
   ]);
   if (!data) notFound();
 
@@ -41,10 +41,10 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
   return (
     <div>
       <Link
-        href={fromOutsideSpending ? "/outside-spending" : from ? `/officeholder/${from.slug}` : "/"}
+        href={fromPoliticalSpending ? "/political-spending" : from ? `/officeholder/${from.slug}` : "/"}
         className="text-eyebrow inline-block pt-[22px] text-accent"
       >
-        ← {fromOutsideSpending ? "Outside Spending" : from ? from.name : "Roster"}
+        ← {fromPoliticalSpending ? "Political Spending" : from ? from.name : "Roster"}
       </Link>
 
       <div className="grid grid-cols-1 sm:grid-cols-[1.6fr_1fr] items-end gap-[50px] border-b border-accent py-[20px] pb-[40px]">
