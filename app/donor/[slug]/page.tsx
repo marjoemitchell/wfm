@@ -133,7 +133,7 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
             rows={funding.rows}
             total={funding.total}
             funderCount={funding.funderCount}
-            spentIndependently={hasIndependent ? independentExpenditures.total : undefined}
+            spent={totalGiven + independentExpenditures.total}
           />
         </div>
       )}

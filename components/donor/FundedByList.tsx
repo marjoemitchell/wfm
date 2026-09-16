@@ -13,18 +13,20 @@ export default function FundedByList({
   rows,
   total,
   funderCount,
-  spentIndependently,
+  spent,
 }: {
   rows: FundingRow[];
   total: number;
   funderCount: number;
-  // The same committee's own independent-expenditure total, so spending
-  // with little or no disclosed funding behind it can be called out.
-  // Omitted when the committee has no independent expenditures to compare
-  // against: there's nothing to flag without a spending number.
-  spentIndependently?: number;
+  // Direct contributions plus independent expenditures combined: either
+  // one on its own can be spent or given with no disclosed funding behind
+  // it, so both count toward the same flag rather than each getting its
+  // own. Always provided; a committee with nothing tracked going out will
+  // just be 0, which never exceeds a real funding total, so the flag
+  // naturally stays quiet rather than needing a separate on/off switch.
+  spent: number;
 }) {
-  const gap = spentIndependently !== undefined && spentIndependently > total;
+  const gap = spent > total;
 
   return (
     <div>
@@ -37,8 +39,8 @@ export default function FundedByList({
       {gap && (
         <div className="mt-4 border-l-2 py-1 pl-4" style={{ borderColor: "var(--color-gold)" }}>
           <p className="max-w-[640px] text-[15.6px] leading-[1.6] text-ink-secondary">
-            <span style={{ color: "var(--color-gold)" }}>{money(spentIndependently! - total)} unaccounted for.</span>{" "}
-            This committee spent {money(spentIndependently!)} independently but disclosed only {money(total)} in
+            <span style={{ color: "var(--color-gold)" }}>{money(spent - total)} unaccounted for.</span>{" "}
+            This committee has given or spent {money(spent)} in Montana races but disclosed only {money(total)} in
             funding. Montana&apos;s filings don&apos;t show where the rest came from.{" "}
             <a href="/rules#dark-money" className="text-accent hover:text-accent-hover">
               How this happens →

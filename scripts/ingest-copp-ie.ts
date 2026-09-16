@@ -26,14 +26,19 @@
  * so no page rendering is needed for any of it.
  *
  * The committee search this starts from only finds committees that filed
- * an independent expenditure of their own, which misses a pass-through
- * funder: a committee (or out-of-state group, if it's registered here at
- * all) that gives money to an independent-expenditure spender but never
- * makes one itself. So every committee visited here also has its own
- * "committee"-listName funders searched for by name and, if found, queued
- * to visit in turn: a bounded BFS over the funding graph, not a fixed
- * list, guarded by a visited-committee set (stops cycles) and a
- * safety-valve cap (stops runaway fan-out; not expected to be hit).
+ * an independent expenditure of their own, which misses two other ways a
+ * committee can be worth checking for disclosed funding: a PAC that only
+ * ever gives directly to a candidate (never filing an independent
+ * expenditure at all, so it's seeded separately here from MT_COPP
+ * candidates' own `isPac` Contribution rows, which means ingest-copp.ts
+ * needs to have already run), and a pass-through funder like Sixteen
+ * Thirty Fund that gives to one of those committees but never spends
+ * itself. That second case is why every committee visited here, seeded or
+ * discovered, also has its own "committee"-listName funders searched for
+ * by name and, if found, queued to visit in turn: a bounded BFS over the
+ * funding graph, not a fixed list, guarded by a visited-committee set
+ * (stops cycles) and a safety-valve cap (stops runaway fan-out; not
+ * expected to be hit).
  *
  * Usage: npm run ingest:copp-ie
  *
@@ -465,25 +470,56 @@ async function main() {
   let unclearDirectionAmt = 0;
   let discoveredCount = 0;
 
-  // A committee queue rather than a fixed list: a committee's own
-  // "committee"-listName funders can name a committee that never itself
-  // filed an independent expenditure (a pass-through funder like Sixteen
-  // Thirty Fund giving to a Montana PAC that then spends against a
-  // candidate); searchIndependentExpenditureCommittees above would never
-  // surface that funder on its own, so each committee processed here can
-  // enqueue more. visitedCommitteeIds stops a funding cycle between two
-  // committees from looping forever; MAX_COMMITTEES is a safety valve
-  // against runaway fan-out, not a number this is expected to hit.
+  const searchedFunderNames = new Set<string>();
   const queue: CommitteeRow[] = [...committees];
   const visitedCommitteeIds = new Set<number>(committees.map((c) => c.committeeId));
-  const searchedFunderNames = new Set<string>();
+
+  // A PAC that only ever gives directly to a candidate can disclose no
+  // funding of its own just as easily as one that spends independently,
+  // and the donor page's "Funded by" check applies the same way either
+  // way; searchIndependentExpenditureCommittees above would never surface
+  // it, since it's specifically scoped to committees that filed an
+  // "Expenditures: Independent" line, so it's seeded here by name instead,
+  // same as a discovered pass-through funder below.
+  console.log("Searching for PACs giving directly to MT_COPP candidates...");
+  const pacContributions = await db.contribution.findMany({
+    where: { isPac: true, politician: { source: "MT_COPP" } },
+    select: { donor: { select: { name: true } } },
+    distinct: ["donorId"],
+  });
+  const pacNames = [...new Set(pacContributions.map((c) => c.donor.name).filter(Boolean))];
+  console.log(`Found ${pacNames.length} distinct PAC donors giving directly to MT_COPP candidates.`);
+  for (const name of pacNames) {
+    const key = name.toLowerCase();
+    if (searchedFunderNames.has(key)) continue;
+    searchedFunderNames.add(key);
+    const found = await searchCommitteesByName(page, name);
+    for (const f of found) {
+      if (visitedCommitteeIds.has(f.committeeId)) continue;
+      visitedCommitteeIds.add(f.committeeId);
+      queue.push(f);
+    }
+    await sleep(150);
+  }
+  const seedCount = queue.length;
+  console.log(`Seeded ${seedCount} committees total before following any funders.`);
+
+  // A committee queue rather than a fixed list beyond the seeding above:
+  // a committee's own "committee"-listName funders can also name a
+  // committee that never itself filed an independent expenditure or gave
+  // directly (a pass-through funder like Sixteen Thirty Fund giving to a
+  // Montana PAC that then spends against a candidate), so each committee
+  // processed here can enqueue more too. visitedCommitteeIds stops a
+  // funding cycle between two committees from looping forever;
+  // MAX_COMMITTEES is a safety valve against runaway fan-out, not a
+  // number this is expected to hit.
   const MAX_COMMITTEES = 2000;
   let processedCount = 0;
 
   while (queue.length > 0 && processedCount < MAX_COMMITTEES) {
     const committee = queue.shift()!;
     processedCount++;
-    if (processedCount > committees.length) discoveredCount++;
+    if (processedCount > seedCount) discoveredCount++;
     try {
       const donorId = await upsertCommitteeDonor(committee.committeeName, committee.committeeAddress);
       if (!donorId) continue;
