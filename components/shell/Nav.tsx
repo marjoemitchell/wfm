@@ -7,6 +7,7 @@ import SupportButton from "@/components/shell/SupportButton";
 const TABS = [
   { href: "/", label: "Roster", match: (p: string) => p === "/" || p.startsWith("/officeholder") || p.startsWith("/donor") },
   { href: "/industries", label: "Industries", match: (p: string) => p.startsWith("/industries") },
+  { href: "/outside-spending", label: "Outside Spending", match: (p: string) => p.startsWith("/outside-spending") },
   { href: "/compare", label: "Compare", match: (p: string) => p.startsWith("/compare") },
   { href: "/map", label: "Donor geography", match: (p: string) => p.startsWith("/map") },
   { href: "/rules", label: "The Rules", match: (p: string) => p.startsWith("/rules") },
