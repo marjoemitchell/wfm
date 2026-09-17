@@ -1,13 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef } from "react";
 
+// A donor page's own path never says which section linked to it (Roster,
+// via an officeholder's top-donor list, or Political Spending, via a
+// spender row), only the `?from=political-spending` query param
+// OutsideSpenderRow/BallotMeasureSpenderRow set does, the same one the
+// donor page itself reads to decide its "back to..." breadcrumb text.
+// Without checking it here too, every donor page fell under Roster's own
+// match below regardless of which tab the visitor actually came from.
+function cameFromPoliticalSpending(p: string, search: URLSearchParams) {
+  return p.startsWith("/donor") && search.get("from") === "political-spending";
+}
+
 const TABS = [
-  { href: "/", label: "Roster", match: (p: string) => p === "/" || p.startsWith("/officeholder") || p.startsWith("/donor") },
+  {
+    href: "/",
+    label: "Roster",
+    match: (p: string, search: URLSearchParams) =>
+      (p === "/" || p.startsWith("/officeholder") || p.startsWith("/donor")) && !cameFromPoliticalSpending(p, search),
+  },
   { href: "/industries", label: "Industries", match: (p: string) => p.startsWith("/industries") },
-  { href: "/political-spending", label: "Political Spending", match: (p: string) => p.startsWith("/political-spending") },
+  {
+    href: "/political-spending",
+    label: "Political Spending",
+    match: (p: string, search: URLSearchParams) => p.startsWith("/political-spending") || cameFromPoliticalSpending(p, search),
+  },
   { href: "/compare", label: "Compare", match: (p: string) => p.startsWith("/compare") },
   { href: "/map", label: "Donor geography", match: (p: string) => p.startsWith("/map") },
   { href: "/rules", label: "The Rules", match: (p: string) => p.startsWith("/rules") },
@@ -15,6 +35,7 @@ const TABS = [
 
 export default function Nav() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const activeRef = useRef<HTMLAnchorElement>(null);
 
   // On narrow screens this bar scrolls horizontally, so the tab you just
@@ -44,7 +65,7 @@ export default function Nav() {
       style={{ scrollbarWidth: "none" }}
     >
       {TABS.map((tab) => {
-        const active = tab.match(pathname);
+        const active = tab.match(pathname, searchParams);
         return (
           <Link
             key={tab.href}
