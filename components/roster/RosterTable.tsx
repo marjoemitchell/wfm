@@ -29,7 +29,7 @@ function RosterTableHeader({ params }: { params: URLSearchParams }) {
   const sort = params.get("sort") || "raised";
   const headerClass = (active: boolean) => `text-[12.6px] uppercase tracking-[0.12em] ${active ? "text-accent" : "text-ink-quiet"}`;
   return (
-    <div className="hidden border-b border-rule pb-3 sm:grid sm:grid-cols-[30px_2.3fr_1.4fr_1.5fr_1fr_40px] sm:items-end sm:gap-[22px]">
+    <div className="hidden border-b border-rule py-3 sm:grid sm:grid-cols-[30px_2.3fr_1.4fr_1.5fr_1fr_40px] sm:items-center sm:gap-[22px]">
       <span />
       <Link href={buildRosterHref(params, { sort: "name" })} className={headerClass(sort === "name")}>
         Name
@@ -41,7 +41,10 @@ function RosterTableHeader({ params }: { params: URLSearchParams }) {
       <Link href={buildRosterHref(params, { sort: "raised" })} className={`text-right ${headerClass(sort === "raised")}`}>
         Total raised
       </Link>
-      <span className={`text-right ${headerClass(false)}`}>Compare</span>
+      {/* No "Compare" label: unlike the other four, this column isn't a
+          sortable data field, just the same per-row toggle button repeated
+          down the list, which doesn't need a heading to explain it. */}
+      <span />
     </div>
   );
 }
