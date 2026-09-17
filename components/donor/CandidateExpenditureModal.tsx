@@ -99,7 +99,7 @@ export default function CandidateExpenditureModal({
               <div className="text-ink" style={{ fontFamily: "var(--font-display)", fontSize: 31 }}>
                 {money(summary.unclearTotal)}
               </div>
-              <div className="text-eyebrow mt-1 text-ink-tertiary">Spent, direction unclear</div>
+              <div className="text-eyebrow mt-1 text-ink-tertiary">Unclear</div>
             </div>
           )}
         </div>
