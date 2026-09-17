@@ -211,8 +211,13 @@ export default function DonorModal({ slug, onClose }: { slug: string | null; onC
                   // column (and the party badge after it) left/right row
                   // to row. On mobile there's no middle column to drift;
                   // amount+date are one trailing auto block, always
-                  // right-anchored regardless of their own width.
-                  className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-rule-faint py-3 hover:bg-ground-raised sm:grid-cols-[1fr_100px_100px] sm:gap-4"
+                  // right-anchored regardless of their own width. The party
+                  // column is 150px, not 100px: PartyChip's own longest
+                  // label ("NONPARTISAN", ~145px rendered) was overflowing
+                  // a 100px track straight into the amount/date column
+                  // next to it, since a grid track doesn't clip an
+                  // overflowing inline child on its own.
+                  className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-rule-faint py-3 hover:bg-ground-raised sm:grid-cols-[1fr_150px_100px] sm:gap-4"
                 >
                   <div className="min-w-0">
                     <div className="truncate text-[19.8px] text-ink">{r.politician.name}</div>
