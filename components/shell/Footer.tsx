@@ -21,8 +21,8 @@ export default async function Footer() {
       <div className="flex flex-wrap justify-between gap-2 text-[15.6px] text-ink-faint" style={{ letterSpacing: "0.08em" }}>
         <span>
           Who Funds Montana · Questions or corrections:{" "}
-          <a href="mailto:support@wfm.org" className="hover:text-ink-tertiary">
-            support@wfm.org
+          <a href="mailto:support@whofundsmontana.org" className="hover:text-ink-tertiary">
+            support@whofundsmontana.org
           </a>
         </span>
         <span>{sourceLine ? `Source: ${sourceLine}.` : "Data has not been ingested yet."}</span>
