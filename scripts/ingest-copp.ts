@@ -24,7 +24,7 @@ import "dotenv/config";
 import { chromium, type Page } from "playwright";
 import { PrismaClient, type Level, type Party } from "../lib/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { classifySector } from "./sector-crosswalk";
+import { classifySectorWithFallback } from "./sector-classifier";
 import { slugify, parseLastFirstName, resolveUniqueSlug } from "../lib/format";
 import { createHash } from "node:crypto";
 
@@ -344,6 +344,10 @@ async function upsertDonor(c: RawContribution): Promise<string | null> {
   const cached = donorIdCache.get(key);
   if (cached) return cached;
 
+  const { sector, confidence: sectorConfidence } = c.isPac
+    ? { sector: "Political Committees", confidence: null }
+    : await classifySectorWithFallback(employer, occupation);
+
   const donor = await db.donor.upsert({
     where: { slug: key },
     create: {
@@ -353,7 +357,8 @@ async function upsertDonor(c: RawContribution): Promise<string | null> {
       occupation,
       city,
       state,
-      sector: c.isPac ? "Political Committees" : classifySector(employer, occupation),
+      sector,
+      sectorConfidence,
     },
     update: {},
   });

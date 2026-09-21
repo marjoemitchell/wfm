@@ -65,6 +65,7 @@ import { PrismaClient, type Level } from "../lib/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { slugify } from "../lib/format";
 import { createHash } from "node:crypto";
+import { inferSupportWithFallback } from "./direction-classifier";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const db = new PrismaClient({ adapter });
@@ -472,31 +473,6 @@ async function upsertBallotMeasure(code: string): Promise<string> {
   return measure.id;
 }
 
-// Montana's C-6 independent-expenditure grid has no structured
-// support/oppose field at all (confirmed against the live API response
-// shape); filers only narrate it in free text. Beyond direct sentiment
-// words, this also catches the "explaining/exposing a candidate's vote on
-// X" and "voting record" framing that this dataset's attack-style
-// committees use almost exclusively instead of ever saying "oppose" (a
-// candidate's own supportive spending describes them directly; it never
-// narrates a third party's vote), plus a "(No <Name>, ...)" scorecard
-// shorthand seen in multi-candidate line items. "vote for" is deliberately
-// NOT treated as a support cue: in this corpus it almost always continues
-// "...vote for [some spending/policy]" (attack framing), not "vote for
-// [candidate]" (the classic GOTV phrasing it would suggest). Text with
-// none of these cues defaults to support and is counted separately below
-// so the gap is visible rather than silently wrong.
-const OPPOSE_RE =
-  /\b(oppose[sd]?|opposing|against|defeat(?:ing)?|attack(?:ing)?|expos(?:e|ing)|reject|no on|vote no|negative|voting record|voted to (?:send|fund)|votes? to raise|conflict of interest)\b/i;
-const OPPOSE_NARRATIVE_RE = /\bexplain(?:s|ing|ed)?\b[^.]{0,60}\bvotes?\b/i;
-const OPPOSE_SCORECARD_RE = /(^|\()\s*no\s+[a-z]/i;
-const SUPPORT_RE = /\b(support(?:ing)?|endorse[sd]?|endorsing|back(?:ing)?|elect|re-?elect|positive|in favor)\b/i;
-
-function inferSupport(text: string): { support: boolean; explicit: boolean } {
-  if (OPPOSE_RE.test(text) || OPPOSE_NARRATIVE_RE.test(text) || OPPOSE_SCORECARD_RE.test(text)) return { support: false, explicit: true };
-  if (SUPPORT_RE.test(text)) return { support: true, explicit: true };
-  return { support: true, explicit: false };
-}
 
 const LOCK_KEY = 837462003;
 
@@ -525,6 +501,7 @@ async function main() {
     amount: number;
     date: Date;
     support: boolean | null;
+    directionConfidence: number | null;
     description: string | null;
     payee: string | null;
   }[] = [];
@@ -544,6 +521,7 @@ async function main() {
     amount: number;
     date: Date;
     support: boolean | null;
+    directionConfidence: number | null;
     description: string | null;
     payee: string | null;
   }[] = [];
@@ -666,8 +644,8 @@ async function main() {
           }
           for (const part of ballotParts) {
             const ballotMeasureId = await upsertBallotMeasure(part.code);
-            const { support, explicit } = inferSupport(part.text);
-            if (!explicit) {
+            const { support, confidence: directionConfidence } = await inferSupportWithFallback(part.text);
+            if (support === null) {
               ballotMeasureUnclearDirection++;
               ballotMeasureUnclearDirectionAmt += part.amount;
             }
@@ -676,7 +654,8 @@ async function main() {
               donorId,
               amount: part.amount,
               date: new Date(item.datePaid),
-              support: explicit ? support : null,
+              support,
+              directionConfidence,
               description: item.purposeDescr?.trim() || null,
               payee: item.entityName?.trim() || null,
             });
@@ -699,8 +678,8 @@ async function main() {
             noMatchAmt += part.amount;
             continue;
           }
-          const { support, explicit } = inferSupport(part.text);
-          if (!explicit) {
+          const { support, confidence: directionConfidence } = await inferSupportWithFallback(part.text);
+          if (support === null) {
             unclearDirection++;
             unclearDirectionAmt += part.amount;
           }
@@ -709,11 +688,13 @@ async function main() {
             donorId,
             amount: part.amount,
             date: new Date(item.datePaid),
-            // Only store a direction we actually found language for; a
-            // guess with no real signal is worse than admitting we don't
-            // know (see inferSupport's own comment for why keyword
+            // Only store a direction we actually found language for (regex
+            // or, failing that, a TypeSafe judgment); a guess with no real
+            // signal is worse than admitting we don't know (see
+            // direction-crosswalk.ts's own comment for why keyword
             // detection alone can't be trusted further than this).
-            support: explicit ? support : null,
+            support,
+            directionConfidence,
             description: item.purposeDescr?.trim() || null,
             payee: item.entityName?.trim() || null,
           });
@@ -741,12 +722,12 @@ async function main() {
   console.log(`  no candidate/issue named: ${noTarget} items, $${noTargetAmt.toFixed(0)}`);
   console.log(`  named target not found among ingested candidates: ${noMatch} items, $${noMatchAmt.toFixed(0)}`);
   console.log(`  multi-candidate line item, couldn't verify split: ${unresolvedSplit} items, $${unresolvedSplitAmt.toFixed(0)}`);
-  console.log(`  direction unclear (no explicit support/oppose language): ${unclearDirection} of ${rows.length} matched rows, $${unclearDirectionAmt.toFixed(0)}`);
+  console.log(`  direction unclear (no signal from regex or TypeSafe): ${unclearDirection} of ${rows.length} matched rows, $${unclearDirectionAmt.toFixed(0)}`);
   console.log(`\nParsed ${fundingRows.length} committee funding rows across ${processedDonorIds.size} committees (${discoveredCount} discovered as pass-through funders, not from the independent-expenditure search).`);
   console.log(`  ${linkedFunderCount} of those rows link to a funder we also track as its own committee.`);
   console.log(`\nParsed ${ballotMeasureItemCount} ballot-measure line items across ${new Set(ballotMeasureRows.map((r) => r.ballotMeasureId)).size} measures.`);
   console.log(`  multi-measure line item, couldn't verify split: ${ballotMeasureUnresolvedSplit} items, $${ballotMeasureUnresolvedSplitAmt.toFixed(0)}`);
-  console.log(`  direction unclear (no explicit support/oppose language): ${ballotMeasureUnclearDirection} of ${ballotMeasureRows.length} matched rows, $${ballotMeasureUnclearDirectionAmt.toFixed(0)}`);
+  console.log(`  direction unclear (no signal from regex or TypeSafe): ${ballotMeasureUnclearDirection} of ${ballotMeasureRows.length} matched rows, $${ballotMeasureUnclearDirectionAmt.toFixed(0)}`);
 
   await db.$transaction([
     db.independentExpenditure.deleteMany({ where: { politicianId: { in: politicians.map((p) => p.id) } } }),
