@@ -510,17 +510,18 @@ export const getBallotMeasureSpenders = unstable_cache(
 
     const byDonor = new Map<
       string,
-      { slug: string; name: string; total: number; measureSlugs: Set<string>; byMeasure: Map<string, { code: string; slug: string; amount: number }> }
+      { slug: string; name: string; total: number; measureCodes: Set<string>; byMeasure: Map<string, { code: string; slug: string; amount: number }> }
     >();
     for (const ie of expenditures) {
       const amt = toNumber(ie.amount);
       const key = ie.donor.id;
       if (!byDonor.has(key)) {
-        byDonor.set(key, { slug: ie.donor.slug, name: ie.donor.name, total: 0, measureSlugs: new Set(), byMeasure: new Map() });
+        byDonor.set(key, { slug: ie.donor.slug, name: ie.donor.name, total: 0, measureCodes: new Set(), byMeasure: new Map() });
       }
       const bucket = byDonor.get(key)!;
       bucket.total += amt;
-      bucket.measureSlugs.add(ie.ballotMeasure.slug);
+      // A joint code ("CI-126 + CI-127") counts as each of its measures.
+      ie.ballotMeasure.code.split(" + ").forEach((code) => bucket.measureCodes.add(code));
       const existing = bucket.byMeasure.get(ie.ballotMeasure.slug);
       if (existing) existing.amount += amt;
       else bucket.byMeasure.set(ie.ballotMeasure.slug, { code: ie.ballotMeasure.code, slug: ie.ballotMeasure.slug, amount: amt });
@@ -536,7 +537,7 @@ export const getBallotMeasureSpenders = unstable_cache(
           name: bucket.name,
           total: bucket.total,
           share: trackedTotal > 0 ? (bucket.total / trackedTotal) * 100 : 0,
-          measureCount: bucket.measureSlugs.size,
+          measureCount: bucket.measureCodes.size,
           topMeasure: topMeasure ? { code: topMeasure.code } : null,
         };
       })

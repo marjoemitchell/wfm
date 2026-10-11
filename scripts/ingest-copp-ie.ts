@@ -28,6 +28,14 @@
  * against, so those are deliberately left uningested rather than invented
  * as several different fake measures (see the BallotMeasure model itself).
  *
+ * Most statewide ballot-measure money never shows up as an independent
+ * expenditure at all, though: a Ballot Issue committee formed for a
+ * measure files its spending as "All Other Expenditures", with no
+ * per-line target. Those committees are found separately (by committee
+ * type, for each of BALLOT_ISSUE_YEARS), tied to their measure through
+ * their own registration, and all of their spending is counted toward it
+ * (see resolveRegistrationMeasures).
+ *
  * Both the independent-expenditure line items and the contribution
  * schedules come from the same `financeRepDetailList` DataTables JSON
  * endpoint the page's own JS calls for every schedule on the report,
@@ -84,6 +92,11 @@ const BASE = "https://cers-ext.mt.gov/CampaignTracker/public";
 // whose spending was filed across 2023-2024; 2020/2022 judicial races
 // are the one thing this deliberately drops.
 const REPORT_CUTOFF = new Date(2023, 0, 1);
+
+// Election years whose Ballot Issue committees are pulled in (see
+// searchBallotIssueCommittees): the last statewide measures and the
+// current cycle's. Anything earlier would also need REPORT_CUTOFF moved.
+const BALLOT_ISSUE_YEARS = [2024, 2026];
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -256,10 +269,125 @@ async function searchCommitteesByName(page: Page, name: string): Promise<Committ
   );
 }
 
+// A Ballot Issue committee's own spending ("All Other Expenditures" on
+// its C-6, the same financeRepDetailList endpoint with listName
+// "expendOther"). Unlike an independent expenditure it names no target
+// per line item at all: the committee exists for one measure (or a
+// couple), which only its registration says (see
+// fetchBallotIssueRegistration).
+type OtherExpenditureItem = {
+  totalAmt: number;
+  entityName: string;
+  datePaid: number;
+  purposeDescr: string;
+};
+
+// The portal's plain committee search, filtered to committee type "BI"
+// (Ballot Issue). This is the only way to find the committees that carry
+// nearly all statewide ballot-measure money: Montanans Securing
+// Reproductive Rights spent $16.2M on CI-128 in 2024 without filing a
+// single independent expenditure, so searchIndependentExpenditureCommittees
+// never surfaced it. (This search does silently drop Incidental
+// committees, per searchCommitteesByName's comment, but a Ballot Issue
+// committee is by definition registered as type BI.)
+async function searchBallotIssueCommittees(page: Page, electionYear: number): Promise<CommitteeRow[]> {
+  await page.request.post(`${BASE}/searchResults/searchCommittees`, {
+    form: { committeeName: "", electionYear: String(electionYear), committeeTypeCode: "BI" },
+  });
+  return fetchAllRows<CommitteeRow>(
+    page,
+    `${BASE}/searchResults/listCommitteeResults`,
+    ["checked", "committeeName", "electionYear", "committeeStatusDescr", "committeeAddress", "committeeTypeDescr"],
+    100
+  );
+}
+
+type RegistrationIssue = { text: string; position: string };
+
+// The "Candidate/Issues | Position | Issue Status" table on a committee's
+// public registration (C-2) page. Only served as rendered HTML, never
+// JSON, so it's read straight out of the markup; a registration still
+// "In Process" (an unfiled draft, usually sitting next to the real one
+// under the same name) has no table at all and returns [].
+async function fetchBallotIssueRegistration(page: Page, committeeId: number): Promise<RegistrationIssue[]> {
+  const res = await page.request.post(`${BASE}/viewCommittee/retrieveCommittee`, {
+    form: { committeeId: String(committeeId), searchType: "", searchPage: "public" },
+  });
+  const table = (await res.text()).match(/collapseBallotIssues[\s\S]*?<\/table>/);
+  if (!table) return [];
+  const cellText = (html: string) =>
+    html
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&[a-z#0-9]+;/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  return [...table[0].matchAll(/<tr>([\s\S]*?)<\/tr>/g)]
+    .slice(1)
+    .map((tr) => [...tr[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((td) => cellText(td[1])))
+    .filter((cells) => cells.length >= 2)
+    .map(([text, position]) => ({ text, position }));
+}
+
+// A measure registered before it was certified is named by its
+// pre-certification "Ballot Issue #N" (numbered per election year, so the
+// year is part of the key) instead of its final code, and the
+// registration is often never amended once the code is assigned. Only
+// entries confirmed against the measure's own registration text belong
+// here.
+const BALLOT_ISSUE_NUMBER_CODES: Record<string, string> = {
+  // Montanans Securing Reproductive Rights: "A constitutional initiative
+  // that affirms the right to make and carry out decisions about one's
+  // own pregnancy."
+  "2024#14": "CI-128",
+};
+
+// Resolves a Ballot Issue committee's registration to the statewide
+// measure(s) it was formed for. Returns null whenever that can't be done
+// cleanly, so the committee's spending is left out rather than guessed
+// at: no rows, only local measures (a levy or bond has no code; see
+// BallotMeasure), or any row that can't be resolved at all (a
+// pre-certification number missing from BALLOT_ISSUE_NUMBER_CODES, or a
+// local measure alongside a statewide one, where the committee's
+// spending can't be split between them). Several codes come back as one
+// joint code ("CI-126 + CI-127"), since the committee's spending isn't
+// itemized per measure either. Direction is the committee's own
+// registered position, null if it isn't a plain Support/Oppose or
+// differs between its measures.
+function resolveRegistrationMeasures(
+  issues: RegistrationIssue[],
+  electionYear: string
+): { code: string; support: boolean | null } | null {
+  if (issues.length === 0) return null;
+  const codes = new Set<string>();
+  const positions = new Set<string>();
+  let unresolved = false;
+  for (const issue of issues) {
+    const rowCodes = [...issue.text.matchAll(BALLOT_CODE_RE)].map((m) => `${m[1].toUpperCase()}-${Number(m[2])}`);
+    if (rowCodes.length === 0) {
+      const issueNumber = /ballot issue #\s*(\d+)/i.exec(issue.text);
+      const mapped = issueNumber ? BALLOT_ISSUE_NUMBER_CODES[`${electionYear}#${Number(issueNumber[1])}`] : undefined;
+      if (mapped) rowCodes.push(mapped);
+    }
+    if (rowCodes.length === 0) {
+      unresolved = true;
+      continue;
+    }
+    rowCodes.forEach((c) => codes.add(c));
+    positions.add(issue.position.trim().toLowerCase());
+  }
+  if (codes.size === 0 || unresolved) return null;
+  const position = positions.size === 1 ? [...positions][0] : null;
+  return {
+    code: [...codes].sort().join(" + "),
+    support: position === "support" ? true : position === "oppose" ? false : null,
+  };
+}
+
 async function fetchIndependentExpenditureItems(
   page: Page,
-  committeeId: number
-): Promise<{ items: IeItem[]; funding: FundingItem[]; committeeFunderNames: string[] }> {
+  committeeId: number,
+  includeOtherExpenditures: boolean
+): Promise<{ items: IeItem[]; otherItems: OtherExpenditureItem[]; funding: FundingItem[]; committeeFunderNames: string[] }> {
   await page.request.post(`${BASE}/publicReportList/retrieveCommitteeReports`, {
     form: { committeeId: String(committeeId), searchType: "", searchPage: "public" },
   });
@@ -279,6 +407,7 @@ async function fetchIndependentExpenditureItems(
   }
 
   const items: IeItem[] = [];
+  const otherItems: OtherExpenditureItem[] = [];
   const funding: FundingItem[] = [];
   const committeeFunderNames: string[] = [];
   for (const report of c6ByPeriod.values()) {
@@ -292,6 +421,10 @@ async function fetchIndependentExpenditureItems(
       page.request.post(`${BASE}/viewFinanceReport/financeRepDetailList`, { form: { listName: "committee" } }),
     ]);
     items.push(...((await ieRes.json()) as IeItem[]));
+    if (includeOtherExpenditures) {
+      const otherRes = await page.request.post(`${BASE}/viewFinanceReport/financeRepDetailList`, { form: { listName: "expendOther" } });
+      otherItems.push(...((await otherRes.json()) as OtherExpenditureItem[]));
+    }
     funding.push(...fundingItemsFromJson((await individualRes.json()) as FundingJsonItem[]));
     const committeeFunders = (await committeeRes.json()) as FundingJsonItem[];
     funding.push(...fundingItemsFromJson(committeeFunders));
@@ -303,7 +436,7 @@ async function fetchIndependentExpenditureItems(
     committeeFunderNames.push(...committeeFunders.filter((c) => c.totalAmt).map((c) => c.entityName?.trim()).filter((n): n is string => !!n));
     await sleep(150);
   }
-  return { items, funding, committeeFunderNames };
+  return { items, otherItems, funding, committeeFunderNames };
 }
 
 // Committee mailing addresses come as a single "line1, City, ST ZIP"
@@ -573,6 +706,9 @@ async function main() {
   let ballotMeasureUnclearDirection = 0;
   let ballotMeasureUnclearDirectionAmt = 0;
   let discoveredCount = 0;
+  let ballotCommitteeItemCount = 0;
+  let ballotCommitteeTransferCount = 0;
+  let ballotCommitteeTransferAmt = 0;
 
   const searchedFunderNames = new Set<string>();
   const queue: CommitteeRow[] = [...committees];
@@ -605,6 +741,41 @@ async function main() {
     }
     await sleep(150);
   }
+  // Ballot Issue committees, resolved to the measure(s) on their own
+  // registration (see resolveRegistrationMeasures). Their "All Other
+  // Expenditures" are read alongside everything else when the queue
+  // reaches them, and they go through the same funding pass as every
+  // other committee, which is how a measure committee's own donors end up
+  // on its page too.
+  const ballotCommitteeMeasures = new Map<number, { code: string; support: boolean | null }>();
+  for (const year of BALLOT_ISSUE_YEARS) {
+    const found = await searchBallotIssueCommittees(page, year);
+    let resolved = 0;
+    for (const c of found) {
+      const issues = await fetchBallotIssueRegistration(page, c.committeeId);
+      const measure = resolveRegistrationMeasures(issues, String(year));
+      await sleep(150);
+      if (!measure) {
+        if (issues.length) {
+          console.log(`  skipping ballot committee "${c.committeeName}" (${year}): ${issues.map((i) => i.text.slice(0, 60)).join(" / ")}`);
+        }
+        continue;
+      }
+      resolved++;
+      ballotCommitteeMeasures.set(c.committeeId, measure);
+      if (visitedCommitteeIds.has(c.committeeId)) continue;
+      visitedCommitteeIds.add(c.committeeId);
+      queue.push(c);
+    }
+    console.log(`Found ${found.length} ${year} Ballot Issue committees, ${resolved} resolved to a statewide measure.`);
+  }
+  // Lowercased names, for dropping a measure committee's payment to
+  // another measure committee: that money is counted when the recipient
+  // spends it, so counting the transfer too would double it.
+  const ballotCommitteeNames = new Set(
+    queue.filter((c) => ballotCommitteeMeasures.has(c.committeeId)).map((c) => c.committeeName.trim().toLowerCase())
+  );
+
   const seedCount = queue.length;
   console.log(`Seeded ${seedCount} committees total before following any funders.`);
 
@@ -630,7 +801,34 @@ async function main() {
       processedDonorIds.add(donorId);
       donorIdByCommitteeName.set(committee.committeeName.trim().toLowerCase(), donorId);
 
-      const { items, funding, committeeFunderNames } = await fetchIndependentExpenditureItems(page, committee.committeeId);
+      const ballotMeasure = ballotCommitteeMeasures.get(committee.committeeId);
+      const { items, otherItems, funding, committeeFunderNames } = await fetchIndependentExpenditureItems(
+        page,
+        committee.committeeId,
+        !!ballotMeasure
+      );
+      if (ballotMeasure) {
+        const ballotMeasureId = await upsertBallotMeasure(ballotMeasure.code);
+        for (const item of otherItems) {
+          if (!item.totalAmt) continue;
+          if (ballotCommitteeNames.has(item.entityName?.trim().toLowerCase())) {
+            ballotCommitteeTransferCount++;
+            ballotCommitteeTransferAmt += item.totalAmt;
+            continue;
+          }
+          ballotCommitteeItemCount++;
+          ballotMeasureRows.push({
+            ballotMeasureId,
+            donorId,
+            amount: item.totalAmt,
+            date: new Date(item.datePaid),
+            support: ballotMeasure.support,
+            directionConfidence: null,
+            description: item.purposeDescr?.trim() || null,
+            payee: item.entityName?.trim() || null,
+          });
+        }
+      }
       for (const f of funding) {
         fundingRows.push({ committeeId: donorId, ...f, funderDonorId: null });
       }
@@ -752,6 +950,8 @@ async function main() {
   console.log(`\nParsed ${fundingRows.length} committee funding rows across ${processedDonorIds.size} committees (${discoveredCount} discovered as pass-through funders, not from the independent-expenditure search).`);
   console.log(`  ${linkedFunderCount} of those rows link to a funder we also track as its own committee.`);
   console.log(`\nParsed ${ballotMeasureItemCount} ballot-measure line items across ${new Set(ballotMeasureRows.map((r) => r.ballotMeasureId)).size} measures.`);
+  console.log(`  plus ${ballotCommitteeItemCount} spending line items from ${ballotCommitteeMeasures.size} Ballot Issue committees`);
+  console.log(`  transfers between Ballot Issue committees, not counted twice: ${ballotCommitteeTransferCount} items, $${ballotCommitteeTransferAmt.toFixed(0)}`);
   console.log(`  several measures, or measures plus a candidate, couldn't verify split: ${ballotMeasureUnresolvedSplit} items, $${ballotMeasureUnresolvedSplitAmt.toFixed(0)}`);
   console.log(`  direction unclear (no signal from regex or TypeSafe): ${ballotMeasureUnclearDirection} of ${ballotMeasureRows.length} matched rows, $${ballotMeasureUnclearDirectionAmt.toFixed(0)}`);
 

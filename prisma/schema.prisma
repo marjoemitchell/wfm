@@ -148,7 +148,11 @@ model IndependentExpenditure {
 // or four different ways across filings) and there is no registry to
 // resolve that against; fabricating one canonical spelling would just be
 // a guess. Those stay out of this table entirely rather than risk being
-// counted as several different fake measures.
+// counted as several different fake measures. One exception to "one code
+// per row": a joint code like "CI-126 + CI-127" for a Ballot Issue
+// committee formed for both, whose spending isn't itemized per measure
+// and can't be split between them (see ingest-copp-ie.ts's
+// resolveRegistrationMeasures).
 model BallotMeasure {
   id                      String                     @id @default(cuid())
   slug                    String                     @unique

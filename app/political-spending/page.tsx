@@ -12,7 +12,7 @@ const HEADERS: Record<SpendingCategory, { title: string; body: string }> = {
   },
   "ballot-measures": {
     title: "Ballot measure spending",
-    body: "Money spent supporting or opposing a statewide ballot measure (a Constitutional Initiative, statutory Initiative, or Legislative Referendum). A local levy or bond isn't included here: it's filed as free text with no official code, and the same measure shows up spelled a few different ways across filings with nothing to reconcile them against.",
+    body: "Money spent supporting or opposing a statewide ballot measure (a Constitutional Initiative, statutory Initiative, or Legislative Referendum), including everything a committee formed for a measure spent on it. A committee formed for two measures at once shows them together, since its spending isn't split between them. A local levy or bond isn't included here: it's filed as free text with no official code, and the same measure shows up spelled a few different ways across filings with nothing to reconcile them against.",
   },
 };
 
