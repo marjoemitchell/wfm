@@ -20,8 +20,9 @@
  *
  * Money aimed at a *statewide* ballot measure instead of a candidate is
  * still captured, as a BallotMeasureExpenditure, but only when the
- * filing's own "Candidate/Issue" text is nothing but a recognized code
- * (CI-###, I-###, LR-###; see splitBallotEntries). A local levy or bond
+ * filing's own "Candidate/Issue" text names a recognized code (CI-###,
+ * I-###, LR-###) and nothing but filler words around it ("Oppose CI126";
+ * see splitBallotEntries). A local levy or bond
  * has no such code, just free text that spells the same measure a few
  * different ways across filings with no registry to reconcile them
  * against, so those are deliberately left uningested rather than invented
@@ -429,41 +430,48 @@ function splitEntries(candidateIssueRaw: string, purposeDescr: string, totalAmt:
 // Legislative Referendum (LR). A local levy or bond has no such code (see
 // the BallotMeasure model's own comment for why those are deliberately
 // left out entirely, not just normalized differently).
-const BALLOT_CODE_RE = /^(CI|LR|I)[\s-]?(\d+)$/i;
+const BALLOT_CODE_RE = /\b(CI|LR|I)[\s-]?(\d{2,3})\b/gi;
 
-function normalizeBallotCode(token: string): string | null {
-  const match = BALLOT_CODE_RE.exec(token.trim());
-  return match ? `${match[1].toUpperCase()}-${match[2]}` : null;
-}
+// Words a filer wraps around a measure code without naming anything else
+// ("Oppose CI126", "opposing CI-126 and CI-127", "Vote No on I-190").
+// Whatever's left of candidateIssue once the codes and these are removed
+// means the line item also targets something else, usually a candidate.
+const BALLOT_FILLER_RE =
+  /\b(oppose[sd]?|opposing|support(?:s|ed|ing)?|vote[sd]?|voting|yes|no|on|for|against|and|the|a|initiatives?|constitutional|legislative|referend(?:um|a|ums)|ballot|measures?|issues?)\b/gi;
 
-// candidateIssue is only ever treated as ballot-measure targeting when
-// every comma/semicolon/"and"-separated piece of it is a recognized code
-// ("I-190, CI-118, LR-130" seen live); a candidate name, a local levy's
-// free-text description, or garbage test data ("John Doe") leaves this
-// returning null so the caller falls through to the candidate-matching
-// path instead, never partially parsed. A non-null empty array means the
-// opposite problem: it's unambiguously ballot-measure text, but with
-// multiple codes and no reliable way to split the total between them
-// (same reasoning as splitEntries above), so the caller counts that
-// separately rather than silently treating it as unmatched.
+// candidateIssue is treated as ballot-measure targeting when it names at
+// least one recognized code (CI-128, CI 126, CI126, LR-130) and nothing
+// else but filler words around it ("I-190, CI-118, LR-130" and "Oppose
+// CI126" both seen live; requiring the field to be nothing but bare
+// codes missed $185k of the state GOP's 2024 CI-126 spending, all filed
+// as "Oppose CI126"). No code at all (a candidate name, a local levy's
+// free-text description, garbage test data like "John Doe") returns null
+// so the caller falls through to the candidate-matching path instead. A
+// non-null empty array means the opposite problem: it's unambiguously
+// ballot-measure text, but either several codes with no reliable way to
+// split the total between them (same reasoning as splitEntries above), or
+// codes mixed in with a candidate ("support Jeremiah Lynch ... and a yes
+// vote for LR126"), where the total covers both and can't be apportioned
+// either; the caller counts those rather than guessing.
 function splitBallotEntries(
   candidateIssueRaw: string,
   purposeDescr: string,
   totalAmt: number
 ): { code: string; amount: number; text: string }[] | null {
-  const rawEntries = candidateIssueRaw
-    .split(/[,;]|\band\b/i)
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (rawEntries.length === 0) return null;
-  const codes = rawEntries.map(normalizeBallotCode);
-  if (codes.some((c) => c === null)) return null;
-  const validCodes = codes as string[];
+  const codes = [
+    ...new Set([...candidateIssueRaw.matchAll(BALLOT_CODE_RE)].map((m) => `${m[1].toUpperCase()}-${Number(m[2])}`)),
+  ];
+  if (codes.length === 0) return null;
 
-  if (validCodes.length === 1) return [{ code: validCodes[0], amount: totalAmt, text: purposeDescr }];
+  const leftover = candidateIssueRaw.replace(BALLOT_CODE_RE, " ").replace(BALLOT_FILLER_RE, " ").replace(/[^a-z0-9]+/gi, "");
+  if (leftover) return [];
+
+  // The direction often lives in candidateIssue itself ("Oppose CI126")
+  // rather than the purpose text, so it's included for a single measure.
+  if (codes.length === 1) return [{ code: codes[0], amount: totalAmt, text: `${candidateIssueRaw}. ${purposeDescr}` }];
 
   const dollarAmounts = [...purposeDescr.matchAll(/\$([\d,]+\.\d{2})/g)].map((m) => Number(m[1].replace(/,/g, "")));
-  if (dollarAmounts.length !== validCodes.length) return [];
+  if (dollarAmounts.length !== codes.length) return [];
   if (Math.abs(dollarAmounts.reduce((a, b) => a + b, 0) - totalAmt) > 0.02) return [];
 
   const parenClauses = [...purposeDescr.matchAll(/\(([^)]+)\)/g)].map((m) => m[1]);
@@ -472,9 +480,9 @@ function splitBallotEntries(
     .map((s) => s.trim())
     .filter(Boolean);
   const texts =
-    parenClauses.length === validCodes.length ? parenClauses : semicolonClauses.length === validCodes.length ? semicolonClauses : null;
+    parenClauses.length === codes.length ? parenClauses : semicolonClauses.length === codes.length ? semicolonClauses : null;
 
-  return validCodes.map((code, i) => ({ code, amount: dollarAmounts[i], text: texts ? texts[i] : purposeDescr }));
+  return codes.map((code, i) => ({ code, amount: dollarAmounts[i], text: texts ? texts[i] : purposeDescr }));
 }
 
 const ballotMeasureIdCache = new Map<string, string>();
@@ -744,7 +752,7 @@ async function main() {
   console.log(`\nParsed ${fundingRows.length} committee funding rows across ${processedDonorIds.size} committees (${discoveredCount} discovered as pass-through funders, not from the independent-expenditure search).`);
   console.log(`  ${linkedFunderCount} of those rows link to a funder we also track as its own committee.`);
   console.log(`\nParsed ${ballotMeasureItemCount} ballot-measure line items across ${new Set(ballotMeasureRows.map((r) => r.ballotMeasureId)).size} measures.`);
-  console.log(`  multi-measure line item, couldn't verify split: ${ballotMeasureUnresolvedSplit} items, $${ballotMeasureUnresolvedSplitAmt.toFixed(0)}`);
+  console.log(`  several measures, or measures plus a candidate, couldn't verify split: ${ballotMeasureUnresolvedSplit} items, $${ballotMeasureUnresolvedSplitAmt.toFixed(0)}`);
   console.log(`  direction unclear (no signal from regex or TypeSafe): ${ballotMeasureUnclearDirection} of ${ballotMeasureRows.length} matched rows, $${ballotMeasureUnclearDirectionAmt.toFixed(0)}`);
 
   await db.$transaction([
