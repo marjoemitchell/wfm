@@ -487,9 +487,11 @@ type MatchablePolitician = { id: string; name: string; office: string; level: Le
 // when present, used to narrow the match to that exact district's
 // Politician before comparing names; without it, a bare surname like
 // "Buttery" would be unresolvable (and a full name is matched directly).
+// A leading "Support"/"Oppose" ("Support McMurray HD77") and a trailing
+// "campaign" ("Doug Adams campaign SD2") are stripped the same way.
 const TITLE_RE =
-  /^(candidate|rep\.?|representative|sen\.?|senator|governor|lt\.?\s*governor|lieutenant governor|judge|justice|mr\.?|mrs\.?|ms\.?|dr\.?)\s+/i;
-const DISTRICT_RE = /\s*(SD|HD)\s*(\d+)\.?\s*$/i;
+  /^(candidate|rep\.?|representative|sen\.?|senator|governor|lt\.?\s*governor|lieutenant governor|judge|justice|mr\.?|mrs\.?|ms\.?|dr\.?|support(?:ing)?|oppose|opposing)\s+/i;
+const DISTRICT_RE = /\s*(SD|HD)\s*-?\s*(\d+)\.?\s*$/i;
 
 function parseCandidateIssueEntry(raw: string): { namePart: string; chamber: "SD" | "HD" | null; district: number | null } {
   let s = raw.trim().replace(/["']/g, "");
@@ -497,8 +499,9 @@ function parseCandidateIssueEntry(raw: string): { namePart: string; chamber: "SD
   while ((stripped = TITLE_RE.exec(s))) s = s.slice(stripped[0].length);
 
   const dm = DISTRICT_RE.exec(s);
-  if (!dm) return { namePart: s.trim(), chamber: null, district: null };
-  return { namePart: s.slice(0, dm.index).trim(), chamber: dm[1].toUpperCase() as "SD" | "HD", district: Number(dm[2]) };
+  const stripCampaign = (name: string) => name.trim().replace(/\s+campaign$/i, "");
+  if (!dm) return { namePart: stripCampaign(s), chamber: null, district: null };
+  return { namePart: stripCampaign(s.slice(0, dm.index)), chamber: dm[1].toUpperCase() as "SD" | "HD", district: Number(dm[2]) };
 }
 
 function findPolitician(entry: string, politicians: MatchablePolitician[]): MatchablePolitician | null {
@@ -532,11 +535,32 @@ function findPolitician(entry: string, politicians: MatchablePolitician[]): Matc
 // apportion the total, so the whole line item is skipped rather than
 // guessing (attributing the full amount to each, or splitting evenly,
 // would fabricate numbers on a public finance dataset).
-function splitEntries(candidateIssueRaw: string, purposeDescr: string, totalAmt: number): { entry: string; amount: number; text: string }[] {
-  const entries = candidateIssueRaw
+// A comma isn't always between two candidates: filers also use one to
+// set off a single candidate's district or office ("Support McMurray,
+// HD77", "Doug Adams campaign, Republican for SD2", "Dan Wilson, MT
+// Supreme Court"). Such a fragment is folded back into the name before
+// it (its district kept for parseCandidateIssueEntry, a bare office
+// dropped) instead of counting as a second candidate, which used to
+// leave one $amount for "two" entries and drop the whole line item.
+const DISTRICT_FRAGMENT_RE = /^(?:(?:republican|democrat(?:ic)?)\s+for\s+)?(SD|HD)\s*-?\s*(\d+)\.?$/i;
+const OFFICE_FRAGMENT_RE = /^(?:MT\s+|Montana\s+)?Supreme Court(?:\s+(?:chief\s+)?(?:judge|justice))?$/i;
+
+function splitCandidateIssue(candidateIssueRaw: string): string[] {
+  const entries: string[] = [];
+  for (const fragment of candidateIssueRaw
     .split(/[,;]/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+    .map((s) => s.trim().replace(/^and\s+/i, ""))
+    .filter(Boolean)) {
+    const district = DISTRICT_FRAGMENT_RE.exec(fragment);
+    if (entries.length > 0 && district) entries[entries.length - 1] += ` ${district[1].toUpperCase()}${district[2]}`;
+    else if (entries.length > 0 && OFFICE_FRAGMENT_RE.test(fragment)) continue;
+    else entries.push(fragment);
+  }
+  return entries;
+}
+
+function splitEntries(candidateIssueRaw: string, purposeDescr: string, totalAmt: number): { entry: string; amount: number; text: string }[] {
+  const entries = splitCandidateIssue(candidateIssueRaw);
   if (entries.length <= 1) return entries.map((entry) => ({ entry, amount: totalAmt, text: purposeDescr }));
 
   const dollarAmounts = [...purposeDescr.matchAll(/\$([\d,]+\.\d{2})/g)].map((m) => Number(m[1].replace(/,/g, "")));
