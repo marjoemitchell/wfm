@@ -72,8 +72,26 @@ const db = new PrismaClient({ adapter });
 
 const BASE = "https://cers-ext.mt.gov/CampaignTracker/public";
 
+// Only C6 reports whose period ends on or after this date are read. The
+// committee search has no usable cycle filter (most committees are
+// registered under a placeholder "2000" election year), so without this
+// every committee's entire filing history back to 2001 was fetched:
+// about 9,100 reports for the seed committees alone (measured live
+// 2026-10-11), at roughly a second each, before any discovered funders.
+// 2023 rather than 2025 because ingest-copp.ts's statewide officeholders
+// and the 2024 ballot measures were both decided in the 2024 election,
+// whose spending was filed across 2023-2024; 2020/2022 judicial races
+// are the one thing this deliberately drops.
+const REPORT_CUTOFF = new Date(2023, 0, 1);
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// MM/DD/YYYY, same format ingest-copp.ts's parseUsDate handles.
+function parseUsDate(s: string): Date {
+  const [m, d, y] = (s ?? "").split("/").map(Number);
+  return new Date(y || 0, (m || 1) - 1, d || 1);
 }
 
 // Generic paginator for this site's server-side jQuery DataTables grids:
@@ -256,7 +274,7 @@ async function fetchIndependentExpenditureItems(
   // last one in wins.
   const c6ByPeriod = new Map<string, ReportRow>();
   for (const r of reports) {
-    if (r.formTypeCode === "C6") c6ByPeriod.set(`${r.fromDateStr}-${r.toDateStr}`, r);
+    if (r.formTypeCode === "C6" && parseUsDate(r.toDateStr) >= REPORT_CUTOFF) c6ByPeriod.set(`${r.fromDateStr}-${r.toDateStr}`, r);
   }
 
   const items: IeItem[] = [];
