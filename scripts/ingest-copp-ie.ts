@@ -339,7 +339,17 @@ const BALLOT_ISSUE_NUMBER_CODES: Record<string, string> = {
   // that affirms the right to make and carry out decisions about one's
   // own pregnancy."
   "2024#14": "CI-128",
+  // Montanans Decide: "A constitutional initiative to protect Montanans'
+  // right to propose..."; qualified as CI-133.
+  "2026#8": "CI-133",
 };
+
+// Pre-certification numbers the Attorney General found legally
+// insufficient, so they never got a code or went to signature gathering.
+// A registration row for one is ignored rather than making the whole
+// committee unresolvable: Montanans for Nonpartisan Courts listed #6
+// alongside CI-132 (#5), and #6 was rejected on 10/9/2025.
+const BALLOT_ISSUE_NUMBERS_REJECTED = new Set(["2026#4", "2026#6"]);
 
 // Resolves a Ballot Issue committee's registration to the statewide
 // measure(s) it was formed for. Returns null whenever that can't be done
@@ -365,7 +375,9 @@ function resolveRegistrationMeasures(
     const rowCodes = [...issue.text.matchAll(BALLOT_CODE_RE)].map((m) => `${m[1].toUpperCase()}-${Number(m[2])}`);
     if (rowCodes.length === 0) {
       const issueNumber = /ballot issue #\s*(\d+)/i.exec(issue.text);
-      const mapped = issueNumber ? BALLOT_ISSUE_NUMBER_CODES[`${electionYear}#${Number(issueNumber[1])}`] : undefined;
+      const key = issueNumber ? `${electionYear}#${Number(issueNumber[1])}` : null;
+      if (key && BALLOT_ISSUE_NUMBERS_REJECTED.has(key)) continue;
+      const mapped = key ? BALLOT_ISSUE_NUMBER_CODES[key] : undefined;
       if (mapped) rowCodes.push(mapped);
     }
     if (rowCodes.length === 0) {

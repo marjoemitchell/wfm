@@ -7,7 +7,7 @@ import { useEffect, useRef } from "react";
 // A donor page's own path never says which section linked to it (Roster,
 // via an officeholder's top-donor list, or Political Spending, via a
 // spender row), only the `?from=political-spending` query param
-// OutsideSpenderRow/BallotMeasureSpenderRow set does, the same one the
+// OutsideSpenderRow/BallotMeasureCommitteeList set does, the same one the
 // donor page itself reads to decide its "back to..." breadcrumb text.
 // Without checking it here too, every donor page fell under Roster's own
 // match below regardless of which tab the visitor actually came from.
@@ -26,7 +26,8 @@ const TABS = [
   {
     href: "/political-spending",
     label: "Political Spending",
-    match: (p: string, search: URLSearchParams) => p.startsWith("/political-spending") || cameFromPoliticalSpending(p, search),
+    match: (p: string, search: URLSearchParams) =>
+      p.startsWith("/political-spending") || p.startsWith("/ballot-measure") || cameFromPoliticalSpending(p, search),
   },
   { href: "/compare", label: "Compare", match: (p: string) => p.startsWith("/compare") },
   { href: "/map", label: "Donor geography", match: (p: string) => p.startsWith("/map") },

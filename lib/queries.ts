@@ -498,54 +498,99 @@ export const getOutsideSpenders = unstable_cache(
   { revalidate: 3600 }
 );
 
-export const getBallotMeasureSpenders = unstable_cache(
-  async () => {
+export type BallotMeasureCommittee = {
+  slug: string;
+  name: string;
+  supportTotal: number;
+  opposeTotal: number;
+  unclearTotal: number;
+  // Other measures this committee's spending here was jointly reported
+  // with (a Ballot Issue committee formed for CI-126 and CI-127 at once),
+  // since that money is counted in full on each of them.
+  sharedWith: string[];
+};
+
+export type BallotMeasureSpending = {
+  supportTotal: number;
+  opposeTotal: number;
+  unclearTotal: number;
+  sharedTotal: number;
+  committees: BallotMeasureCommittee[];
+};
+
+// Every measure's spending, keyed by its own code. A joint code ("CI-126
+// + CI-127", see the BallotMeasure model) counts in full toward each of
+// its measures, flagged as shared, since the committee's spending was
+// never itemized per measure and there's no honest way to split it.
+// Summing across measures would double-count that money, which is why
+// getBallotMeasureSpendingTotal below works from the rows instead.
+export const getBallotMeasureSpendingByCode = unstable_cache(
+  async (): Promise<Record<string, BallotMeasureSpending>> => {
     const expenditures = await db.ballotMeasureExpenditure.findMany({
       select: {
         amount: true,
-        donor: { select: { id: true, slug: true, name: true } },
-        ballotMeasure: { select: { slug: true, code: true } },
+        support: true,
+        donor: { select: { slug: true, name: true } },
+        ballotMeasure: { select: { code: true } },
       },
     });
 
-    const byDonor = new Map<
-      string,
-      { slug: string; name: string; total: number; measureCodes: Set<string>; byMeasure: Map<string, { code: string; slug: string; amount: number }> }
-    >();
-    for (const ie of expenditures) {
-      const amt = toNumber(ie.amount);
-      const key = ie.donor.id;
-      if (!byDonor.has(key)) {
-        byDonor.set(key, { slug: ie.donor.slug, name: ie.donor.name, total: 0, measureCodes: new Set(), byMeasure: new Map() });
+    const byCode: Record<string, BallotMeasureSpending> = {};
+    const committeesByCode = new Map<string, Map<string, BallotMeasureCommittee>>();
+    for (const e of expenditures) {
+      const amt = toNumber(e.amount);
+      const codes = e.ballotMeasure.code.split(" + ");
+      for (const code of codes) {
+        const measure = (byCode[code] ??= { supportTotal: 0, opposeTotal: 0, unclearTotal: 0, sharedTotal: 0, committees: [] });
+        if (e.support === true) measure.supportTotal += amt;
+        else if (e.support === false) measure.opposeTotal += amt;
+        else measure.unclearTotal += amt;
+        if (codes.length > 1) measure.sharedTotal += amt;
+
+        const committees = committeesByCode.get(code) ?? new Map<string, BallotMeasureCommittee>();
+        committeesByCode.set(code, committees);
+        const committee = committees.get(e.donor.slug) ?? {
+          slug: e.donor.slug,
+          name: e.donor.name,
+          supportTotal: 0,
+          opposeTotal: 0,
+          unclearTotal: 0,
+          sharedWith: [],
+        };
+        committees.set(e.donor.slug, committee);
+        if (e.support === true) committee.supportTotal += amt;
+        else if (e.support === false) committee.opposeTotal += amt;
+        else committee.unclearTotal += amt;
+        for (const other of codes) {
+          if (other !== code && !committee.sharedWith.includes(other)) committee.sharedWith.push(other);
+        }
       }
-      const bucket = byDonor.get(key)!;
-      bucket.total += amt;
-      // A joint code ("CI-126 + CI-127") counts as each of its measures.
-      ie.ballotMeasure.code.split(" + ").forEach((code) => bucket.measureCodes.add(code));
-      const existing = bucket.byMeasure.get(ie.ballotMeasure.slug);
-      if (existing) existing.amount += amt;
-      else bucket.byMeasure.set(ie.ballotMeasure.slug, { code: ie.ballotMeasure.code, slug: ie.ballotMeasure.slug, amount: amt });
     }
 
-    const trackedTotal = [...byDonor.values()].reduce((sum, b) => sum + b.total, 0);
-
-    const rows = [...byDonor.values()]
-      .map((bucket) => {
-        const topMeasure = [...bucket.byMeasure.values()].sort((a, b) => b.amount - a.amount)[0];
-        return {
-          slug: bucket.slug,
-          name: bucket.name,
-          total: bucket.total,
-          share: trackedTotal > 0 ? (bucket.total / trackedTotal) * 100 : 0,
-          measureCount: bucket.measureCodes.size,
-          topMeasure: topMeasure ? { code: topMeasure.code } : null,
-        };
-      })
-      .sort((a, b) => b.total - a.total);
-
-    return { rows, trackedTotal };
+    for (const [code, committees] of committeesByCode) {
+      byCode[code].committees = [...committees.values()].sort(
+        (a, b) => b.supportTotal + b.opposeTotal + b.unclearTotal - (a.supportTotal + a.opposeTotal + a.unclearTotal)
+      );
+    }
+    return byCode;
   },
-  ["ballot-measure-spenders"],
+  ["ballot-measure-spending-by-code"],
+  { revalidate: 3600 }
+);
+
+// Total spent on any of the given measures, each expenditure counted
+// once even when it's shared between two of them.
+export const getBallotMeasureSpendingTotal = unstable_cache(
+  async (codes: string[]): Promise<number> => {
+    const wanted = new Set(codes);
+    const expenditures = await db.ballotMeasureExpenditure.findMany({
+      select: { amount: true, ballotMeasure: { select: { code: true } } },
+    });
+    return expenditures
+      .filter((e) => e.ballotMeasure.code.split(" + ").some((code) => wanted.has(code)))
+      .reduce((sum, e) => sum + toNumber(e.amount), 0);
+  },
+  ["ballot-measure-spending-total"],
   { revalidate: 3600 }
 );
 

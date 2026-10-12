@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
-import { getOutsideSpenders, getBallotMeasureSpenders } from "@/lib/queries";
+import {
+  getOutsideSpenders,
+  getBallotMeasureSpendingByCode,
+  getBallotMeasureSpendingTotal,
+  type BallotMeasureSpending,
+} from "@/lib/queries";
+import { BALLOT_MEASURES } from "@/lib/ballot-measures";
 import { moneyAbbreviated } from "@/lib/format";
 import OutsideSpenderRow from "@/components/industries/OutsideSpenderRow";
-import BallotMeasureSpenderRow from "@/components/political-spending/BallotMeasureSpenderRow";
+import BallotMeasureRow from "@/components/political-spending/BallotMeasureRow";
 import PoliticalSpendingTabs, { type SpendingCategory } from "@/components/political-spending/PoliticalSpendingTabs";
 
 const HEADERS: Record<SpendingCategory, { title: string; body: string }> = {
@@ -11,8 +17,8 @@ const HEADERS: Record<SpendingCategory, { title: string; body: string }> = {
     body: "Money spent supporting or opposing a candidate, paid directly to vendors rather than given to their campaign. By law, an independent-expenditure committee can't coordinate with or donate to the candidates it spends on.",
   },
   "ballot-measures": {
-    title: "Ballot measure spending",
-    body: "Money spent supporting or opposing a statewide ballot measure (a Constitutional Initiative, statutory Initiative, or Legislative Referendum), including everything a committee formed for a measure spent on it. A committee formed for two measures at once shows them together, since its spending isn't split between them. A local levy or bond isn't included here: it's filed as free text with no official code, and the same measure shows up spelled a few different ways across filings with nothing to reconcile them against.",
+    title: "Ballot measures",
+    body: "Montana's statewide ballot measures, and the money committees have spent for and against each one. Select a measure to see what it does and who's spending on it.",
   },
 };
 
@@ -33,8 +39,12 @@ export default async function PoliticalSpendingPage(props: PageProps<"/political
   const header = HEADERS[category];
   const { rows: candidateRows, trackedTotal: candidateTotal } =
     category === "candidates" ? await getOutsideSpenders() : { rows: [], trackedTotal: 0 };
-  const { rows: ballotRows, trackedTotal: ballotTotal } =
-    category === "ballot-measures" ? await getBallotMeasureSpenders() : { rows: [], trackedTotal: 0 };
+  const upcomingMeasures = BALLOT_MEASURES.filter((m) => m.status.kind === "upcoming");
+  const pastMeasures = BALLOT_MEASURES.filter((m) => m.status.kind !== "upcoming");
+  const [ballotSpending, ballotTotal]: [Record<string, BallotMeasureSpending>, number] =
+    category === "ballot-measures"
+      ? await Promise.all([getBallotMeasureSpendingByCode(), getBallotMeasureSpendingTotal(upcomingMeasures.map((m) => m.code))])
+      : [{}, 0];
   const trackedTotal = category === "candidates" ? candidateTotal : category === "ballot-measures" ? ballotTotal : 0;
 
   return (
@@ -46,7 +56,9 @@ export default async function PoliticalSpendingPage(props: PageProps<"/political
         </div>
         <div>
           <div className="text-stat-secondary text-ink">{moneyAbbreviated(trackedTotal)}</div>
-          <div className="text-eyebrow mt-2 text-ink-tertiary">Total spent</div>
+          <div className="text-eyebrow mt-2 text-ink-tertiary">
+            {category === "ballot-measures" ? "Spent on 2026 measures" : "Total spent"}
+          </div>
         </div>
       </div>
 
@@ -63,16 +75,18 @@ export default async function PoliticalSpendingPage(props: PageProps<"/political
           </div>
         ))}
 
-      {category === "ballot-measures" &&
-        (ballotRows.length === 0 ? (
-          <div className="py-[70px] text-center text-[18px] text-ink-quiet">No ballot-measure spending tracked yet.</div>
-        ) : (
-          <div>
-            {ballotRows.map((row, i) => (
-              <BallotMeasureSpenderRow key={row.slug} row={row} index={i} />
-            ))}
-          </div>
-        ))}
+      {category === "ballot-measures" && (
+        <div>
+          <div className="border-b border-rule pt-9 pb-3 text-eyebrow text-accent">On the November 3, 2026 ballot</div>
+          {upcomingMeasures.map((m) => (
+            <BallotMeasureRow key={m.code} measure={m} spending={ballotSpending[m.code] ?? null} />
+          ))}
+          <div className="border-b border-rule pt-12 pb-3 text-eyebrow text-ink-quiet">Earlier measures</div>
+          {pastMeasures.map((m) => (
+            <BallotMeasureRow key={m.code} measure={m} spending={ballotSpending[m.code] ?? null} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
