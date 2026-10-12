@@ -6,6 +6,7 @@ import { money } from "@/lib/format";
 import RecipientList from "@/components/donor/RecipientList";
 import IndependentExpenditureCandidateList from "@/components/donor/IndependentExpenditureCandidateList";
 import FundedByList from "@/components/donor/FundedByList";
+import { getBallotMeasureInfo, ballotMeasureSlug } from "@/lib/ballot-measures";
 
 export async function generateMetadata(props: PageProps<"/donor/[slug]">): Promise<Metadata> {
   const { slug } = await props.params;
@@ -23,10 +24,12 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
   const searchParams = await props.searchParams;
   const fromSlug = typeof searchParams.from === "string" ? searchParams.from : null;
   const fromPoliticalSpending = fromSlug === "political-spending";
+  // "measure:ci-128", set by a ballot measure page's committee list.
+  const fromMeasure = fromSlug?.startsWith("measure:") ? getBallotMeasureInfo(fromSlug.slice("measure:".length)) : null;
 
   const [data, from] = await Promise.all([
     getDonorBySlug(slug),
-    fromSlug && !fromPoliticalSpending ? getPoliticianNameBySlug(fromSlug) : Promise.resolve(null),
+    fromSlug && !fromPoliticalSpending && !fromSlug.startsWith("measure:") ? getPoliticianNameBySlug(fromSlug) : Promise.resolve(null),
   ]);
   if (!data) notFound();
 
@@ -53,10 +56,18 @@ export default async function DonorPage(props: PageProps<"/donor/[slug]">) {
   return (
     <div>
       <Link
-        href={fromPoliticalSpending ? "/political-spending" : from ? `/officeholder/${from.slug}` : "/"}
+        href={
+          fromMeasure
+            ? `/ballot-measure/${ballotMeasureSlug(fromMeasure.code)}`
+            : fromPoliticalSpending
+              ? "/political-spending"
+              : from
+                ? `/officeholder/${from.slug}`
+                : "/"
+        }
         className="text-eyebrow inline-block pt-[22px] text-accent"
       >
-        ← {fromPoliticalSpending ? "Political Spending" : from ? from.name : "Roster"}
+        ← {fromMeasure ? fromMeasure.code : fromPoliticalSpending ? "Candidates" : from ? from.name : "Roster"}
       </Link>
 
       <div className="grid grid-cols-1 sm:grid-cols-[1.6fr_1fr] items-end gap-[50px] border-b border-accent py-[20px] pb-[40px]">

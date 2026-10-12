@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { money } from "@/lib/format";
+import { money, slugify } from "@/lib/format";
 import type { BallotMeasureSpending } from "@/lib/queries";
 
 export default function BallotMeasureCommitteeList({ code, spending }: { code: string; spending: BallotMeasureSpending | null }) {
@@ -18,7 +18,7 @@ export default function BallotMeasureCommitteeList({ code, spending }: { code: s
       {committees.map((c) => (
         <Link
           key={c.slug}
-          href={`/donor/${c.slug}?from=political-spending`}
+          href={`/donor/${c.slug}?from=measure:${slugify(code)}`}
           className="grid w-full grid-cols-[1fr_auto] items-center gap-4 border-b border-rule-faint py-5 hover:bg-ground-raised sm:gap-[22px]"
         >
           <div className="min-w-0">
